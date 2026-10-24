@@ -4,7 +4,7 @@ import { api } from '../api.js';
 import { state, markLevelTab } from '../app.js';
 import { esc, renderMath, STEP_KIND, stepIcon, toast } from '../ui.js';
 import { WIDGETS } from '../animations/widgets.js';
-import { generateSet } from '../exercises/generators.js';
+import { generateSet, expectedText } from '../exercises/generators.js';
 import { generateFromTemplate } from '../exercises/template.js';
 
 const BLOCK_LABEL = { definition: 'Définition', property: 'Propriété', method: 'Méthode', example: 'Exemple', remark: 'Remarque', text: '' };
@@ -184,12 +184,8 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
     return String(raw ?? '').trim().slice(0, 120);
   }
 
-  function expectedText(q) {
-    const e = q.check?.expected;
-    if (e === undefined || e === null) return '';
-    if (q.input.kind === 'choice') return plain(q.input.options?.[Number(e)] ?? e);
-    return String(e).slice(0, 120);
-  }
+  // Réponse attendue, lisible : « -x + 3 » plutôt que le tableau de coefficients.
+  const expectedFor = (q) => plain(expectedText(q)).slice(0, 120);
 
   const pips = () =>
     `<ol class="pips" aria-hidden="true">${questions.map((_, k) => `<li class="${k < results.length ? (results[k] ? 'ok' : 'ko') : k === i ? 'cur' : ''}"></li>`).join('')}</ol>`;
@@ -260,7 +256,7 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
       detail.push({
         position: i + 1,
         prompt: plain(q.prompt),
-        expected: expectedText(q),
+        expected: expectedFor(q),
         given: answerText(q, raw),
         ok: res.ok,
         durationS: Math.max(0, Math.round((Date.now() - questionStarted) / 1000)),

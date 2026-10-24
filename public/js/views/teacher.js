@@ -15,6 +15,7 @@ export async function teacherHomeView({ el, query }) {
       <div class="head-actions">
         <a class="btn ghost" href="/prof/chapitres" data-link>Mes chapitres</a>
         <a class="btn ghost" href="/prof/exercices" data-link>Mes exercices</a>
+        <a class="btn ghost" href="/prof/fiche" data-link>Fiche à imprimer</a>
       </div>
     </header>
     ${

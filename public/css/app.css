@@ -867,6 +867,29 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .mi-given code { background: var(--ko-soft); color: var(--ko); font-weight: 700; }
 .mi-expected code { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
 
+/* ---------- Fiche d'exercices à imprimer ---------- */
+.fiche-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; align-items: start; }
+@media (max-width: 900px) { .fiche-layout { grid-template-columns: 1fr; } }
+.src-group { margin-bottom: 14px; }
+.src-title { font-weight: 700; font-size: 0.9rem; color: var(--muted); margin: 0 0 4px; }
+.fiche-preview { background: var(--paper-2); border: 2px solid var(--rule); border-radius: var(--radius); padding: 20px 24px; }
+
+.fi-sheet { background: #fff; color: #17233f; border: 1px solid var(--rule); border-radius: 8px; padding: 22px 26px; margin-bottom: 18px; }
+.fi-head { border-bottom: 2px solid #17233f; padding-bottom: 8px; margin-bottom: 14px; }
+.fi-title { font: 750 1.2rem/1.2 var(--font-title); margin: 0 0 6px; }
+.fi-meta { margin: 0; font-size: 0.92rem; }
+.fi-line { display: inline-block; width: 200px; border-bottom: 1px dotted #17233f; margin-right: 18px; }
+.fi-line.short { width: 90px; }
+.fi-questions { margin: 0; padding-left: 1.6em; display: grid; gap: 14px; }
+.fi-questions > li { break-inside: avoid; }
+.fi-prompt { margin-bottom: 6px; }
+.fi-answer { height: 2.1em; border-bottom: 1px dotted #9aa4b2; }
+.fi-choices { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.fi-choices li::before { content: '☐ '; }
+.fi-corrige { background: #f7f9fc; }
+.fi-sol { margin: 4px 0 0; }
+.fi-detail { margin-top: 4px; font-size: 0.94rem; color: #3b4a68; }
+
 /* ---------- Divers ---------- */
 .site-footer { padding: 22px 24px; text-align: center; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--rule); background: var(--paper-2); }
 .site-footer p { margin: 0; }
@@ -890,4 +913,24 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
   .slip p { margin: 0; }
   .slip-name { font-weight: 700; font-size: 14pt; margin-bottom: 6px !important; }
   .slip-name span { font-weight: 400; }
+
+  /* Fiches d'exercices : une par page, en pleine largeur. */
+  .print-sheet.fiches { display: block; }
+  .print-sheet.fiches .fi-sheet {
+    break-after: page;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    margin: 0;
+    background: #fff;
+    color: #000;
+    font: 11.5pt/1.5 var(--font-body);
+  }
+  .print-sheet.fiches .fi-sheet:last-child { break-after: auto; }
+  .print-sheet.fiches .fi-head { border-bottom: 1.5pt solid #000; }
+  .print-sheet.fiches .fi-title { font-size: 15pt; }
+  .print-sheet.fiches .fi-questions { gap: 16pt; }
+  .print-sheet.fiches .fi-answer { height: 2.4em; }
+  .print-sheet.fiches .fi-detail { color: #333; }
+  @page { margin: 16mm 14mm; }
 }

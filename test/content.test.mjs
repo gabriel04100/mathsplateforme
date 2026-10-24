@@ -76,6 +76,27 @@ test('tout générateur enregistré produit des questions jouables', () => {
   }
 });
 
+// La réponse attendue n'a pas la même forme selon le type de question : indice
+// pour un QCM, tableau de coefficients pour une expression. Le corrigé papier et
+// le suivi de classe ont besoin d'un texte lisible dans tous les cas.
+test('la réponse attendue se lit en clair quel que soit le type de question', async () => {
+  const { expectedText, expectedMath } = await import('../public/js/exercises/generators.js');
+  for (const id of Object.keys(GENERATORS)) {
+    const q = generateSet(id, 1)[0];
+    const texte = expectedText(q);
+    assert.ok(texte, `${id} : réponse attendue vide`);
+    assert.ok(!/^\s*[\d.,-]+\s*,\s*[\d.,-]+/.test(texte), `${id} : « ${texte} » ressemble à un tableau de coefficients`);
+    assert.ok(!texte.includes('[object'), `${id} : « ${texte} » n'est pas lisible`);
+    if (q.input.kind === 'choice') {
+      assert.equal(texte, q.input.options[q.check.expected], `${id} : le QCM doit rendre le texte de la bonne proposition`);
+    }
+    if (q.input.kind === 'poly') {
+      assert.equal(expectedMath(q), `$${texte}$`, `${id} : une expression part vers KaTeX`);
+      assert.match(texte, /x|^-?\d/, `${id} : « ${texte} » n'est pas une expression`);
+    }
+  }
+});
+
 test('lecture des expressions tapées par les élèves', () => {
   assert.deepEqual(parsePoly('6x+15').coefs, [15, 6, 0]);
   assert.deepEqual(parsePoly(' 15 + 6x ').coefs, [15, 6, 0]);

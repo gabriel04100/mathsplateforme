@@ -572,6 +572,21 @@ export const GENERATORS = {
   'aff-coeff': affCoeff,
 };
 
+// Réponse attendue d'une question, en texte lisible par un humain.
+// Nécessaire parce que `check.expected` n'a pas la même forme selon le type :
+// un indice pour un QCM, un tableau de coefficients pour une expression
+// littérale, un nombre sinon. Sert au corrigé papier et au suivi de classe.
+export function expectedText(q) {
+  const e = q?.check?.expected;
+  if (e === undefined || e === null) return '';
+  if (q.input?.kind === 'choice') return String(q.input.options?.[Number(e)] ?? e);
+  if (q.input?.kind === 'poly') return Array.isArray(e) ? polyLatex(e) : String(e);
+  return String(e);
+}
+
+// La même, prête à être rendue par KaTeX quand c'est une expression.
+export const expectedMath = (q) => (q?.input?.kind === 'poly' ? `$${expectedText(q)}$` : expectedText(q));
+
 // Génère une série de questions toutes différentes.
 export function generateSet(generatorId, count, params) {
   const gen = GENERATORS[generatorId];
