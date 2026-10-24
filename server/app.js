@@ -11,6 +11,7 @@ const { createAccountsService } = require('./services/accounts');
 const { createExercisesService } = require('./services/exercises');
 const { createChaptersService } = require('./services/chapters');
 const { createGamesService } = require('./services/games');
+const { createDocumentsService } = require('./services/documents');
 const { loadSharedModules } = require('./shared-modules');
 const mw = require('./middleware');
 
@@ -29,7 +30,8 @@ async function createApp(config, { log = console } = {}) {
   const progress = createProgressService({ repos, content, chapters, exercises });
   const accounts = createAccountsService({ repos, auth });
   const games = createGamesService({ repos });
-  const services = { repos, content, auth, progress, accounts, exercises, chapters, games, config };
+  const documents = createDocumentsService({ repos, config, content });
+  const services = { repos, content, auth, progress, accounts, exercises, chapters, games, documents, config };
 
   const app = express();
   app.disable('x-powered-by');
@@ -51,6 +53,7 @@ async function createApp(config, { log = console } = {}) {
   api.use('/auth', require('./routes/auth')(services));
   api.use('/teacher', require('./routes/teacher')(services));
   api.use('/games', require('./routes/games')(services));
+  api.use('/documents', require('./routes/documents')(services));
   api.use('/', require('./routes/learning')(services));
   api.use((req, res) => res.status(404).json({ error: 'Route inconnue' }));
   app.use('/api', api);

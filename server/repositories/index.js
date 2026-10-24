@@ -331,6 +331,54 @@ function createRepositories(db) {
     remove: (teacherId, chapterId) => db.prepare('DELETE FROM chapter_overrides WHERE teacher_id = ? AND chapter_id = ?').run(teacherId, chapterId),
   };
 
+  // Documents PDF déposés par l'enseignant. Seule la fiche signalétique est en
+  // base ; le fichier vit sur le disque.
+  const documents = {
+    findById: (id) => db.prepare('SELECT * FROM documents WHERE id = ?').get(id),
+    listByTeacher: (teacherId) =>
+      db
+        .prepare(
+          `SELECT d.*, c.name AS class_name FROM documents d
+           LEFT JOIN classes c ON c.id = d.class_id
+           WHERE d.teacher_id = ? ORDER BY d.level, d.created_at DESC`
+        )
+        .all(teacherId),
+    listForClass: (classId, level) =>
+      db
+        .prepare(
+          `SELECT d.* FROM documents d
+           JOIN classes c ON c.id = ?
+           WHERE d.teacher_id = c.teacher_id AND d.level = ?
+             AND (d.class_id IS NULL OR d.class_id = c.id)
+           ORDER BY d.created_at DESC`
+        )
+        .all(classId, level),
+    create: ({ teacherId, level, chapterId, classId, title, filename, storedName, sizeBytes }) =>
+      Number(
+        db
+          .prepare(
+            `INSERT INTO documents (teacher_id, level, chapter_id, class_id, title, filename, stored_name, size_bytes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+          )
+          .run(teacherId, level, chapterId ?? null, classId ?? null, title, filename, storedName, sizeBytes).lastInsertRowid
+      ),
+    update: (id, fields) => {
+      const map = { title: 'title', chapterId: 'chapter_id', classId: 'class_id' };
+      const sets = [];
+      const vals = [];
+      for (const [k, col] of Object.entries(map)) {
+        if (fields[k] !== undefined) {
+          sets.push(`${col} = ?`);
+          vals.push(fields[k]);
+        }
+      }
+      if (!sets.length) return;
+      db.prepare(`UPDATE documents SET ${sets.join(', ')} WHERE id = ?`).run(...vals, id);
+    },
+    countDownload: (id) => db.prepare('UPDATE documents SET downloads = downloads + 1 WHERE id = ?').run(id),
+    remove: (id) => db.prepare('DELETE FROM documents WHERE id = ?').run(id),
+  };
+
   // Parties jouées : base du classement global (toutes classes confondues).
   const gameScores = {
     create: ({ userId, gameId, variant, score, correct, wrong, bestStreak, durationS, details }) =>
@@ -387,7 +435,7 @@ function createRepositories(db) {
 
   return {
     users, classes, sessions, progress, attempts, questionResults, positions,
-    customExercises, customChapters, chapterOverrides, gameScores,
+    customExercises, customChapters, chapterOverrides, documents, gameScores,
     transaction: (fn) => db.transaction(fn)(),
   };
 }
