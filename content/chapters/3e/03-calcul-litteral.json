@@ -1,0 +1,127 @@
+{
+  "id": "3e-calcul-litteral",
+  "level": "3e",
+  "order": 3,
+  "title": "Calcul littéral : développer",
+  "summary": "Supprimer une parenthèse, distribuer un facteur, développer un produit de deux parenthèses.",
+  "status": "published",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "text",
+          "html": "<strong>Développer</strong>, c'est transformer un produit en somme : on supprime les parenthèses. Tout ce chapitre repose sur trois situations, de la plus simple à la plus complète."
+        },
+        {
+          "type": "definition",
+          "title": "Opposé d'une parenthèse",
+          "html": "Pour tous nombres $a$ et $b$ :<br>$-(a + b) = -a - b$ et $-(a - b) = -a + b$<br>Le signe $-$ devant la parenthèse change le signe de <strong>chaque</strong> terme qu'elle contient."
+        },
+        {
+          "type": "example",
+          "title": "Opposé d'une parenthèse",
+          "html": "$-(x + 7) = -x - 7$<br>$-(3x - 5) = -3x + 5$<br>$8 - (x + 2) = 8 - x - 2 = 6 - x$"
+        },
+        {
+          "type": "remark",
+          "title": "L'erreur la plus fréquente du chapitre",
+          "html": "Beaucoup écrivent $-(x + 7) = -x + 7$ : le second terme est oublié. Pour s'en souvenir : $-(x+7)$ signifie $-1 \\times (x+7)$, et $-1$ multiplie bien les <em>deux</em> termes."
+        },
+        {
+          "type": "property",
+          "title": "Simple distributivité",
+          "html": "Pour tous nombres $k$, $a$ et $b$ :<br>$k(a + b) = ka + kb$ et $k(a - b) = ka - kb$<br>Le facteur devant la parenthèse multiplie <strong>chaque</strong> terme."
+        },
+        {
+          "type": "example",
+          "title": "Simple distributivité",
+          "html": "$5(x + 3) = 5 \\times x + 5 \\times 3 = 5x + 15$<br>$-4(2x - 1) = -4 \\times 2x - (-4) \\times 1 = -8x + 4$"
+        },
+        {
+          "type": "property",
+          "title": "Double distributivité",
+          "html": "Pour tous nombres $a$, $b$, $c$ et $d$ :<br>$(a + b)(c + d) = ac + ad + bc + bd$<br>Chaque terme de la première parenthèse multiplie chaque terme de la seconde : cela fait <strong>quatre</strong> produits."
+        },
+        {
+          "type": "example",
+          "title": "Double distributivité",
+          "html": "$(x + 3)(x + 5) = x \\times x + x \\times 5 + 3 \\times x + 3 \\times 5$<br>$= x^2 + 5x + 3x + 15$<br>$= x^2 + 8x + 15$ (on regroupe les termes en $x$)"
+        },
+        {
+          "type": "method",
+          "title": "Développer puis réduire",
+          "html": "<ol><li>Je regarde la forme de l'expression : opposé d'une parenthèse, simple ou double distributivité.</li><li>Je développe en faisant <em>tous</em> les produits, sans oublier les signes.</li><li>Je réduis : je regroupe les $x^2$ entre eux, les $x$ entre eux, les nombres entre eux.</li></ol>"
+        },
+        {
+          "type": "remark",
+          "title": "Réduire, c'est obligatoire",
+          "html": "Une expression développée se termine toujours par une réduction. $x^2 + 5x + 3x + 15$ n'est pas une réponse finie : il faut écrire $x^2 + 8x + 15$."
+        }
+      ]
+    },
+    {
+      "id": "anim",
+      "type": "animation",
+      "title": "Voir la distributivité avec des aires",
+      "widget": "area-model",
+      "intro": "L'aire d'un rectangle se calcule de deux façons : en une fois, ou en additionnant les morceaux. C'est exactement la distributivité."
+    },
+    {
+      "id": "ex1",
+      "type": "exercise",
+      "title": "Reconnaître la forme",
+      "instructions": "Avant de calculer, sache de quelle situation il s'agit.",
+      "generator": "lit-forme",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "ex2",
+      "type": "exercise",
+      "title": "Opposé d'une parenthèse",
+      "instructions": "Change le signe de chaque terme.",
+      "generator": "lit-oppose",
+      "count": 8,
+      "pass": 6
+    },
+    {
+      "id": "ex3",
+      "type": "exercise",
+      "title": "Soustraire une parenthèse",
+      "instructions": "Attention au signe devant la parenthèse.",
+      "generator": "lit-soustraire-parenthese",
+      "count": 8,
+      "pass": 6
+    },
+    {
+      "id": "ex4",
+      "type": "exercise",
+      "title": "Simple distributivité",
+      "instructions": "Le facteur multiplie chaque terme de la parenthèse.",
+      "generator": "lit-distrib-simple",
+      "count": 8,
+      "pass": 6
+    },
+    {
+      "id": "ex5",
+      "type": "exercise",
+      "title": "Double distributivité",
+      "instructions": "Quatre produits, puis on réduit.",
+      "generator": "lit-distrib-double",
+      "count": 8,
+      "pass": 6
+    },
+    {
+      "id": "ex6",
+      "type": "exercise",
+      "title": "Tout mélangé",
+      "instructions": "À toi de reconnaître la méthode à chaque question.",
+      "generator": "lit-melange",
+      "count": 10,
+      "pass": 7
+    }
+  ]
+}

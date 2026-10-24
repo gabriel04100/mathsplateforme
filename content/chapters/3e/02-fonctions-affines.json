@@ -1,0 +1,63 @@
+{
+  "id": "3e-fonctions-affines",
+  "level": "3e",
+  "order": 2,
+  "title": "Fonctions affines",
+  "theme": "Organisation et gestion de données, fonctions",
+  "summary": "Calculer des images, reconnaître coefficient directeur et ordonnée à l'origine, lire une représentation graphique.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Fonction affine",
+          "html": "Une fonction $f$ est <strong>affine</strong> s'il existe deux nombres $a$ et $b$ tels que, pour tout $x$, $f(x) = ax + b$.<br>$a$ est le <strong>coefficient directeur</strong>, $b$ l'<strong>ordonnée à l'origine</strong>."
+        },
+        {
+          "type": "remark",
+          "title": "Cas particuliers",
+          "html": "Si $b = 0$, $f(x) = ax$ : $f$ est <strong>linéaire</strong> (situation de proportionnalité).<br>Si $a = 0$, $f(x) = b$ : $f$ est <strong>constante</strong>."
+        },
+        {
+          "type": "method",
+          "title": "Calculer une image",
+          "html": "Avec $f(x) = 3x - 2$, l'image de $4$ est $f(4) = 3 \\times 4 - 2 = 10$."
+        },
+        {
+          "type": "property",
+          "title": "Représentation graphique",
+          "html": "La représentation graphique d'une fonction affine est une <strong>droite</strong>. Elle coupe l'axe des ordonnées au point $(0\\,;\\,b)$. Quand $x$ augmente de $1$, $y$ varie de $a$ : si $a &gt; 0$ la droite « monte », si $a &lt; 0$ elle « descend »."
+        }
+      ]
+    },
+    {
+      "id": "anim-droite",
+      "type": "animation",
+      "title": "Jouer avec a et b",
+      "intro": "Fais varier $a$ et $b$ : observe la pente de la droite et l'endroit où elle coupe l'axe vertical.",
+      "widget": "affine-graph",
+      "params": { "a": 1, "b": 2 }
+    },
+    {
+      "id": "ex-image",
+      "type": "exercise",
+      "title": "Calculer des images",
+      "instructions": "Calcule l'image demandée.",
+      "generator": "aff-image",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "ex-coefficients",
+      "type": "exercise",
+      "title": "Reconnaître a et b",
+      "instructions": "Lis le coefficient demandé.",
+      "generator": "aff-coeff",
+      "count": 6,
+      "pass": 5
+    }
+  ]
+}

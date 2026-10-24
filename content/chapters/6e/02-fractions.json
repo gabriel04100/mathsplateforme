@@ -1,0 +1,63 @@
+{
+  "id": "6e-fractions",
+  "level": "6e",
+  "order": 2,
+  "title": "Fractions",
+  "theme": "Nombres et calculs",
+  "summary": "Comprendre une fraction comme un partage, calculer la fraction d'une quantité, reconnaître des fractions égales.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Fraction",
+          "html": "Dans la fraction $\\dfrac{a}{b}$, $a$ est le <strong>numérateur</strong> et $b$ le <strong>dénominateur</strong> ($b \\neq 0$).<br>$\\dfrac{3}{4}$ d'une unité, c'est partager l'unité en $4$ parts égales et en prendre $3$."
+        },
+        {
+          "type": "property",
+          "title": "Fraction et quotient",
+          "html": "$\\dfrac{a}{b}$ est le nombre qui, multiplié par $b$, donne $a$ : $b \\times \\dfrac{a}{b} = a$. C'est aussi le quotient $a \\div b$. Exemple : $\\dfrac{7}{4} = 7 \\div 4 = 1{,}75$."
+        },
+        {
+          "type": "method",
+          "title": "Calculer une fraction d'une quantité",
+          "html": "Pour calculer $\\dfrac{3}{4}$ de $20$ : on divise par le dénominateur puis on multiplie par le numérateur.<br>$20 \\div 4 = 5$ puis $5 \\times 3 = 15$. Donc $\\dfrac{3}{4}$ de $20$ vaut $15$."
+        },
+        {
+          "type": "property",
+          "title": "Fractions égales",
+          "html": "On ne change pas une fraction en multipliant (ou en divisant) son numérateur et son dénominateur par un même nombre non nul : $\\dfrac{2}{3} = \\dfrac{2 \\times 4}{3 \\times 4} = \\dfrac{8}{12}$."
+        }
+      ]
+    },
+    {
+      "id": "anim-barres",
+      "type": "animation",
+      "title": "Fractions en barres",
+      "intro": "Règle le numérateur et le dénominateur. Compare les deux barres pour voir quand deux fractions sont égales.",
+      "widget": "fraction-bars",
+      "params": { "a": [2, 3], "b": [4, 6] }
+    },
+    {
+      "id": "ex-quantite",
+      "type": "exercise",
+      "title": "Fraction d'une quantité",
+      "instructions": "Calcule la fraction de la quantité.",
+      "generator": "frac-of-quantity",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "ex-egales",
+      "type": "exercise",
+      "title": "Fractions égales",
+      "instructions": "Complète pour que les deux fractions soient égales.",
+      "generator": "frac-equivalent",
+      "count": 6,
+      "pass": 5
+    }
+  ]
+}

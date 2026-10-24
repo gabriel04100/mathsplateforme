@@ -1,0 +1,67 @@
+{
+  "id": "5e-priorites-operatoires",
+  "level": "5e",
+  "order": 1,
+  "title": "Priorités opératoires",
+  "theme": "Nombres et calculs",
+  "summary": "Effectuer un calcul avec plusieurs opérations et des parenthèses en respectant les priorités.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "property",
+          "title": "Les règles de priorité",
+          "html": "Dans un calcul, on effectue dans l'ordre :<ol><li>les calculs <strong>entre parenthèses</strong> (les plus intérieures d'abord) ;</li><li>les <strong>multiplications et divisions</strong>, de gauche à droite ;</li><li>les <strong>additions et soustractions</strong>, de gauche à droite.</li></ol>"
+        },
+        {
+          "type": "example",
+          "title": "Sans parenthèses",
+          "html": "$A = 5 + 3 \\times 4$<br>$A = 5 + 12$ <span class='muted'>(la multiplication d'abord)</span><br>$A = 17$"
+        },
+        {
+          "type": "example",
+          "title": "Avec parenthèses",
+          "html": "$B = (5 + 3) \\times 4$<br>$B = 8 \\times 4$<br>$B = 32$"
+        },
+        {
+          "type": "remark",
+          "title": "Bien rédiger",
+          "html": "On recopie le calcul à chaque étape en ne faisant qu'une seule « couche » de calculs à la fois, et on aligne les signes $=$."
+        }
+      ]
+    },
+    {
+      "id": "anim-etapes",
+      "type": "animation",
+      "title": "Calcul pas à pas",
+      "intro": "Choisis une expression et clique sur « Étape suivante » : l'opération prioritaire est surlignée avant d'être calculée.",
+      "widget": "priority-steps",
+      "params": {
+        "expressions": ["5 + 3 * 4", "(5 + 3) * 4", "20 - 12 / 4 + 1", "2 * (7 - 3) + 6 / 2", "(18 - (4 + 2)) / 3"]
+      }
+    },
+    {
+      "id": "ex-sans-parentheses",
+      "type": "exercise",
+      "title": "Calculs sans parenthèses",
+      "instructions": "Calcule en respectant les priorités.",
+      "generator": "prio-calc",
+      "params": { "parentheses": false },
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "ex-avec-parentheses",
+      "type": "exercise",
+      "title": "Calculs avec parenthèses",
+      "instructions": "Calcule en respectant les priorités.",
+      "generator": "prio-calc",
+      "params": { "parentheses": true },
+      "count": 6,
+      "pass": 5
+    }
+  ]
+}

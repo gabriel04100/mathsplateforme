@@ -1,0 +1,74 @@
+[
+  {
+    "id": "3e-factoriser",
+    "level": "3e",
+    "order": 4,
+    "title": "Factoriser, identités remarquables",
+    "theme": "Nombres et calculs",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-equations-produit",
+    "level": "3e",
+    "order": 5,
+    "title": "Équations produit et inéquations",
+    "theme": "Nombres et calculs",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-thales",
+    "level": "3e",
+    "order": 6,
+    "title": "Théorème de Thalès",
+    "theme": "Espace et géométrie",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-trigonometrie",
+    "level": "3e",
+    "order": 7,
+    "title": "Trigonométrie",
+    "theme": "Espace et géométrie",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-homotheties",
+    "level": "3e",
+    "order": 8,
+    "title": "Homothéties et agrandissements",
+    "theme": "Espace et géométrie",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-probabilites",
+    "level": "3e",
+    "order": 9,
+    "title": "Probabilités",
+    "theme": "Organisation et gestion de données",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-statistiques",
+    "level": "3e",
+    "order": 10,
+    "title": "Statistiques",
+    "theme": "Organisation et gestion de données",
+    "status": "draft",
+    "steps": []
+  },
+  {
+    "id": "3e-sphere",
+    "level": "3e",
+    "order": 11,
+    "title": "Sphère et boule",
+    "theme": "Espace et géométrie",
+    "status": "draft",
+    "steps": []
+  }
+]

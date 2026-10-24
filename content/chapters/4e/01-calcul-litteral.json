@@ -1,0 +1,68 @@
+{
+  "id": "4e-calcul-litteral",
+  "level": "4e",
+  "order": 1,
+  "title": "Calcul littéral : développer",
+  "theme": "Nombres et calculs",
+  "summary": "Utiliser la distributivité pour développer et réduire une expression.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "property",
+          "title": "Distributivité simple",
+          "html": "Pour tous nombres $k$, $a$ et $b$ : $k(a + b) = ka + kb$ et $k(a - b) = ka - kb$.<br><strong>Développer</strong>, c'est transformer un produit en somme."
+        },
+        {
+          "type": "example",
+          "title": "Exemple",
+          "html": "$A = 3(2x + 5)$<br>$A = 3 \\times 2x + 3 \\times 5$<br>$A = 6x + 15$"
+        },
+        {
+          "type": "property",
+          "title": "Double distributivité",
+          "html": "$(a + b)(c + d) = ac + ad + bc + bd$<br>Exemple : $(x + 2)(x + 3) = x^2 + 3x + 2x + 6 = x^2 + 5x + 6$."
+        },
+        {
+          "type": "remark",
+          "title": "Attention aux signes",
+          "html": "$-2(x - 4) = -2x + 8$ : on multiplie <strong>chaque</strong> terme par $-2$, signe compris."
+        },
+        {
+          "type": "text",
+          "title": "Écrire ta réponse",
+          "html": "Dans les exercices, tape par exemple <code>6x+15</code>, <code>-2x+8</code> ou <code>x^2+5x+6</code> (tu peux aussi écrire <code>x²</code>)."
+        }
+      ]
+    },
+    {
+      "id": "anim-aires",
+      "type": "animation",
+      "title": "Développer avec des aires",
+      "intro": "Le grand rectangle a pour aire $k(a+b)$. Il se découpe en deux rectangles d'aires $ka$ et $kb$. Bouge les curseurs.",
+      "widget": "area-model",
+      "params": { "k": 3, "a": 4, "b": 2 }
+    },
+    {
+      "id": "ex-simple",
+      "type": "exercise",
+      "title": "Distributivité simple",
+      "instructions": "Développe et réduis.",
+      "generator": "dev-simple",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "ex-double",
+      "type": "exercise",
+      "title": "Double distributivité",
+      "instructions": "Développe et réduis.",
+      "generator": "dev-double",
+      "count": 5,
+      "pass": 4
+    }
+  ]
+}

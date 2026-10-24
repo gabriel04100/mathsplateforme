@@ -1,0 +1,6 @@
+[
+  { "id": "6e", "label": "6e", "title": "Sixième", "cycle": "Cycle 3", "sequential": true },
+  { "id": "5e", "label": "5e", "title": "Cinquième", "cycle": "Cycle 4", "sequential": true },
+  { "id": "4e", "label": "4e", "title": "Quatrième", "cycle": "Cycle 4", "sequential": true },
+  { "id": "3e", "label": "3e", "title": "Troisième", "cycle": "Cycle 4", "sequential": true }
+]

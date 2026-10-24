@@ -1,0 +1,68 @@
+{
+  "id": "3e-arithmetique",
+  "level": "3e",
+  "order": 1,
+  "title": "Arithmétique",
+  "theme": "Nombres et calculs",
+  "summary": "Diviseurs, nombres premiers et décomposition en produit de facteurs premiers.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Diviseur",
+          "html": "$a$ et $b$ sont deux entiers positifs ($b \\neq 0$). On dit que $b$ est un <strong>diviseur</strong> de $a$ si le reste de la division euclidienne de $a$ par $b$ est nul. Exemple : $6$ est un diviseur de $42$ car $42 = 6 \\times 7$."
+        },
+        {
+          "type": "definition",
+          "title": "Nombre premier",
+          "html": "Un nombre <strong>premier</strong> est un entier qui a exactement deux diviseurs : $1$ et lui-même.<br>Les premiers nombres premiers : $2, 3, 5, 7, 11, 13, 17, 19, 23, 29\\ldots$ ($1$ n'est pas premier)."
+        },
+        {
+          "type": "method",
+          "title": "Tester si un nombre est premier",
+          "html": "On essaie de diviser $n$ par $2$, $3$, $5$, $7$, $11$… On peut s'arrêter dès que le carré du diviseur testé dépasse $n$. Si aucune division ne tombe juste, $n$ est premier."
+        },
+        {
+          "type": "property",
+          "title": "Décomposition",
+          "html": "Tout entier supérieur à $1$ s'écrit comme un produit de nombres premiers, de façon unique (à l'ordre près). Exemple : $360 = 2^3 \\times 3^2 \\times 5$."
+        },
+        {
+          "type": "remark",
+          "title": "Critères de divisibilité",
+          "html": "Par $2$ : chiffre des unités pair. Par $3$ : somme des chiffres divisible par $3$. Par $5$ : se termine par $0$ ou $5$. Par $9$ : somme des chiffres divisible par $9$."
+        }
+      ]
+    },
+    {
+      "id": "anim-crible",
+      "type": "animation",
+      "title": "Le crible d'Ératosthène",
+      "intro": "Clique sur « Barrer les multiples » : à chaque étape, les multiples du plus petit nombre restant sont barrés. Ceux qui survivent sont premiers.",
+      "widget": "sieve",
+      "params": { "max": 100 }
+    },
+    {
+      "id": "ex-premier",
+      "type": "exercise",
+      "title": "Premier ou pas ?",
+      "instructions": "Dis si le nombre est premier.",
+      "generator": "arith-prime",
+      "count": 8,
+      "pass": 6
+    },
+    {
+      "id": "ex-diviseur",
+      "type": "exercise",
+      "title": "Plus petit diviseur premier",
+      "instructions": "Trouve le plus petit nombre premier qui divise le nombre.",
+      "generator": "arith-smallest-prime-divisor",
+      "count": 6,
+      "pass": 5
+    }
+  ]
+}

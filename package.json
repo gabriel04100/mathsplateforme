@@ -1,0 +1,28 @@
+{
+  "name": "mathsplateforme",
+  "version": "0.1.0",
+  "description": "Plateforme de mathématiques pour le collège : cours, exercices, animations et parcours en autonomie.",
+  "author": "Gabriel Pizzo",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --env-file-if-exists=.env --watch server/index.js",
+    "migrate": "node scripts/migrate.js",
+    "create-teacher": "node scripts/create-teacher.js",
+    "check-content": "node scripts/check-content.js",
+    "test": "node --test \"test/**/*.test.{js,mjs}\""
+  },
+  "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource-variable/lexend": "^5.3.0",
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "express": "^5.3.0",
+    "katex": "^0.19.1"
+  }
+}

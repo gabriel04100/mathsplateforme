@@ -1,0 +1,68 @@
+{
+  "id": "4e-pythagore",
+  "level": "4e",
+  "order": 2,
+  "title": "Théorème de Pythagore",
+  "theme": "Espace et géométrie",
+  "summary": "Calculer une longueur dans un triangle rectangle.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Hypoténuse",
+          "html": "Dans un triangle rectangle, l'<strong>hypoténuse</strong> est le côté opposé à l'angle droit. C'est le plus long des trois côtés."
+        },
+        {
+          "type": "property",
+          "title": "Théorème de Pythagore",
+          "html": "Si le triangle $ABC$ est rectangle en $A$, alors $BC^2 = AB^2 + AC^2$.<br>Le carré de l'hypoténuse est égal à la somme des carrés des deux autres côtés."
+        },
+        {
+          "type": "example",
+          "title": "Calculer l'hypoténuse",
+          "html": "$ABC$ est rectangle en $A$ avec $AB = 3$ cm et $AC = 4$ cm.<br>$BC^2 = 3^2 + 4^2 = 9 + 16 = 25$, donc $BC = \\sqrt{25} = 5$ cm."
+        },
+        {
+          "type": "example",
+          "title": "Calculer un autre côté",
+          "html": "$EFG$ est rectangle en $E$ avec $FG = 13$ cm et $EF = 5$ cm.<br>$FG^2 = EF^2 + EG^2$ donc $EG^2 = 13^2 - 5^2 = 169 - 25 = 144$, et $EG = 12$ cm."
+        },
+        {
+          "type": "remark",
+          "title": "Valeurs approchées",
+          "html": "Si le résultat n'est pas un nombre entier, on donne une valeur arrondie (au dixième par exemple) avec la touche $\\sqrt{\\ }$ de la calculatrice."
+        }
+      ]
+    },
+    {
+      "id": "anim-carres",
+      "type": "animation",
+      "title": "Les carrés de Pythagore",
+      "intro": "Change les longueurs des deux côtés de l'angle droit : l'aire du grand carré est toujours la somme des aires des deux petits.",
+      "widget": "pythagoras",
+      "params": { "a": 3, "b": 4 }
+    },
+    {
+      "id": "ex-hypotenuse",
+      "type": "exercise",
+      "title": "Calculer l'hypoténuse",
+      "instructions": "Calcule la longueur demandée (arrondie au dixième si besoin).",
+      "generator": "pyth-hypotenuse",
+      "count": 5,
+      "pass": 4
+    },
+    {
+      "id": "ex-cote",
+      "type": "exercise",
+      "title": "Calculer un côté de l'angle droit",
+      "instructions": "Calcule la longueur demandée (arrondie au dixième si besoin).",
+      "generator": "pyth-side",
+      "count": 5,
+      "pass": 4
+    }
+  ]
+}

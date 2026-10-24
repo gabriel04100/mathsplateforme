@@ -1,0 +1,68 @@
+{
+  "id": "6e-nombres-decimaux",
+  "level": "6e",
+  "order": 1,
+  "title": "Nombres entiers et décimaux",
+  "theme": "Nombres et calculs",
+  "summary": "Lire, écrire, comparer et ranger des nombres décimaux ; les placer sur une droite graduée.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Nombre décimal",
+          "html": "Un <strong>nombre décimal</strong> peut s'écrire avec une virgule et un nombre fini de chiffres après la virgule. Exemples : $3{,}25$ ; $0{,}7$ ; $12$ (car $12 = 12{,}0$)."
+        },
+        {
+          "type": "text",
+          "title": "Le tableau de numération",
+          "html": "Dans $345{,}72$ : le chiffre $3$ est celui des <strong>centaines</strong>, $4$ celui des <strong>dizaines</strong>, $5$ celui des <strong>unités</strong>, $7$ celui des <strong>dixièmes</strong> et $2$ celui des <strong>centièmes</strong>.<br>Un dixième c'est $\\dfrac{1}{10} = 0{,}1$ ; un centième c'est $\\dfrac{1}{100} = 0{,}01$ ; un millième c'est $\\dfrac{1}{1000} = 0{,}001$."
+        },
+        {
+          "type": "method",
+          "title": "Comparer deux nombres décimaux",
+          "html": "<ol><li>On compare d'abord les <strong>parties entières</strong>. La plus grande l'emporte.</li><li>Si elles sont égales, on compare les <strong>dixièmes</strong>, puis les <strong>centièmes</strong>, et ainsi de suite.</li></ol>On peut ajouter des zéros à la fin de la partie décimale sans changer le nombre : $4{,}5 = 4{,}50$."
+        },
+        {
+          "type": "example",
+          "title": "Exemple",
+          "html": "Compare $7{,}38$ et $7{,}4$.<br>Mêmes parties entières ($7$). Dixièmes : $3 &lt; 4$. Donc $7{,}38 &lt; 7{,}4$.<br><em>Piège classique :</em> « 38 est plus grand que 4 » ne veut rien dire ici ! On écrit $7{,}4 = 7{,}40$ et on compare $38$ centièmes et $40$ centièmes."
+        },
+        {
+          "type": "remark",
+          "title": "Droite graduée",
+          "html": "Sur une droite graduée, plus un nombre est grand, plus il est placé à droite. Entre deux graduations consécutives, on peut toujours zoomer pour trouver d'autres nombres décimaux."
+        }
+      ]
+    },
+    {
+      "id": "anim-droite",
+      "type": "animation",
+      "title": "Zoomer sur la droite graduée",
+      "intro": "Clique sur un intervalle pour zoomer. Observe comment chaque zoom fait apparaître dix fois plus de graduations.",
+      "widget": "number-line-zoom",
+      "params": { "start": 0, "end": 10, "target": 3.47 }
+    },
+    {
+      "id": "ex-chiffres",
+      "type": "exercise",
+      "title": "Rang des chiffres",
+      "instructions": "Trouve le chiffre demandé.",
+      "generator": "dec-place-value",
+      "count": 5,
+      "pass": 4
+    },
+    {
+      "id": "ex-comparer",
+      "type": "exercise",
+      "title": "Comparer des décimaux",
+      "instructions": "Choisis le bon symbole : <, > ou =.",
+      "generator": "dec-compare",
+      "count": 8,
+      "pass": 6
+    }
+  ]
+}

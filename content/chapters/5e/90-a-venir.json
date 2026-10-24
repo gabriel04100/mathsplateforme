@@ -1,0 +1,10 @@
+[
+  { "id": "5e-fractions", "level": "5e", "order": 3, "title": "Fractions : comparer, additionner", "theme": "Nombres et calculs", "status": "draft", "steps": [] },
+  { "id": "5e-expressions-litterales", "level": "5e", "order": 4, "title": "Expressions littérales", "theme": "Nombres et calculs", "status": "draft", "steps": [] },
+  { "id": "5e-proportionnalite", "level": "5e", "order": 5, "title": "Proportionnalité et pourcentages", "theme": "Nombres et calculs", "status": "draft", "steps": [] },
+  { "id": "5e-triangles", "level": "5e", "order": 6, "title": "Triangles : construction et somme des angles", "theme": "Espace et géométrie", "status": "draft", "steps": [] },
+  { "id": "5e-parallelogrammes", "level": "5e", "order": 7, "title": "Parallélogrammes", "theme": "Espace et géométrie", "status": "draft", "steps": [] },
+  { "id": "5e-symetrie-centrale", "level": "5e", "order": 8, "title": "Symétrie centrale", "theme": "Espace et géométrie", "status": "draft", "steps": [] },
+  { "id": "5e-statistiques", "level": "5e", "order": 9, "title": "Statistiques et probabilités", "theme": "Organisation et gestion de données", "status": "draft", "steps": [] },
+  { "id": "5e-prismes-cylindres", "level": "5e", "order": 10, "title": "Prismes et cylindres", "theme": "Grandeurs et mesures", "status": "draft", "steps": [] }
+]

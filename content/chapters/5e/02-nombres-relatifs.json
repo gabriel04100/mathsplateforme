@@ -1,0 +1,63 @@
+{
+  "id": "5e-nombres-relatifs",
+  "level": "5e",
+  "order": 2,
+  "title": "Nombres relatifs",
+  "theme": "Nombres et calculs",
+  "summary": "Repérer, comparer, additionner et soustraire des nombres relatifs.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Nombres relatifs",
+          "html": "Un nombre relatif est formé d'un <strong>signe</strong> ($+$ ou $-$) et d'une <strong>distance à zéro</strong>. Exemple : $-4{,}5$ a pour signe $-$ et pour distance à zéro $4{,}5$.<br>Deux nombres <strong>opposés</strong> ont la même distance à zéro mais des signes contraires : $3$ et $-3$."
+        },
+        {
+          "type": "property",
+          "title": "Comparer",
+          "html": "Un nombre négatif est plus petit qu'un nombre positif. Entre deux nombres négatifs, le plus petit est celui qui a la plus grande distance à zéro : $-7 &lt; -2$."
+        },
+        {
+          "type": "property",
+          "title": "Additionner",
+          "html": "<ul><li><strong>Même signe</strong> : on garde le signe et on additionne les distances à zéro. $(-3) + (-5) = -8$.</li><li><strong>Signes contraires</strong> : on prend le signe de celui qui a la plus grande distance à zéro et on soustrait les distances. $(-7) + (+3) = -4$.</li></ul>"
+        },
+        {
+          "type": "property",
+          "title": "Soustraire",
+          "html": "Soustraire un nombre, c'est <strong>additionner son opposé</strong>.<br>$(-4) - (-9) = (-4) + (+9) = 5$."
+        }
+      ]
+    },
+    {
+      "id": "anim-droite",
+      "type": "animation",
+      "title": "Additions sur la droite",
+      "intro": "Choisis un point de départ et un nombre à ajouter : la flèche montre le déplacement sur la droite graduée.",
+      "widget": "relative-moves",
+      "params": { "min": -12, "max": 12 }
+    },
+    {
+      "id": "ex-addition",
+      "type": "exercise",
+      "title": "Additions",
+      "instructions": "Calcule.",
+      "generator": "rel-add",
+      "count": 8,
+      "pass": 6
+    },
+    {
+      "id": "ex-soustraction",
+      "type": "exercise",
+      "title": "Soustractions",
+      "instructions": "Calcule (pense à transformer en addition).",
+      "generator": "rel-sub",
+      "count": 8,
+      "pass": 6
+    }
+  ]
+}
