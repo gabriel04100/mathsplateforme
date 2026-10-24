@@ -8,6 +8,8 @@ class ProgressError extends Error {
   }
 }
 
+const { cleanQuestionDetail } = require('./question-detail');
+
 // `chapters` fusionne le programme des fichiers et les chapitres écrits par
 // l'enseignant : la progression ne fait donc aucune différence entre les deux.
 function createProgressService({ repos, content, chapters, exercises = null }) {
@@ -137,7 +139,7 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
       return { ok: true };
     },
 
-    recordAttempt(user, { chapterId, stepId, score, total, durationS, mode = 'parcours' }) {
+    recordAttempt(user, { chapterId, stepId, score, total, durationS, mode = 'parcours', questions }) {
       const { step } = requireStep(user, chapterId, stepId);
       const userId = user.id;
       if (step.type !== 'exercise') throw new ProgressError("Cette étape n'est pas un exercice");
@@ -149,7 +151,8 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
       const m = mode === 'libre' ? 'libre' : 'parcours';
       let result;
       repos.transaction(() => {
-        repos.attempts.create({ userId, chapterId, stepId, mode: m, score, total, durationS });
+        const attemptId = repos.attempts.create({ userId, chapterId, stepId, mode: m, score, total, durationS });
+        repos.questionResults.createMany(cleanQuestionDetail(questions, { attemptId, userId, chapterId, stepId, total }));
         const prev = repos.progress.get(userId, chapterId, stepId);
         const better = !prev || prev.best_score == null || score > prev.best_score;
         const passed = prev?.status === 'passed' || score >= step.pass;
@@ -217,6 +220,55 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
     },
 
     // Vue enseignant : une ligne par élève, une colonne par chapitre du niveau.
+    // « Où ça coince » : pour un chapitre et une classe, le taux de réussite
+    // étape par étape et les réponses fausses qui reviennent le plus souvent.
+    chapterDiagnostic(classId, chapterId) {
+      const viewer = asStudentOf(classId);
+      const ch = chapterOf(viewer, chapterId);
+      if (!ch) throw new ProgressError('Chapitre introuvable', 404);
+      const students = repos.users.listByClass(classId);
+      const ids = students.map((s) => s.id);
+      const byStep = new Map(repos.questionResults.statsByStep(ids, chapterId).map((r) => [r.step_id, r]));
+      const names = new Map(students.map((s) => [s.id, s.display_name]));
+
+      const steps = ch.steps
+        .filter((s) => s.type === 'exercise')
+        .map((s) => {
+          const r = byStep.get(s.id);
+          const posees = r?.posees || 0;
+          return {
+            stepId: s.id,
+            title: s.title,
+            questionsPosees: posees,
+            reussite: posees ? Math.round((100 * (r.justes || 0)) / posees) : null,
+            elevesConcernes: r?.eleves || 0,
+            tempsMoyen: r?.temps_moyen ? Math.round(r.temps_moyen) : null,
+          };
+        });
+
+      const stepTitle = new Map(ch.steps.map((s) => [s.id, s.title]));
+      const erreurs = repos.questionResults.commonMistakes(ids, chapterId).map((m) => ({
+        stepId: m.step_id,
+        stepTitle: stepTitle.get(m.step_id) || m.step_id,
+        prompt: m.prompt,
+        expected: m.expected,
+        given: m.given,
+        fois: m.n,
+        eleves: m.eleves,
+      }));
+
+      return {
+        chapterId: ch.id,
+        chapterTitle: ch.title,
+        eleves: students.length,
+        steps,
+        erreurs,
+        // Un diagnostic n'a de sens qu'avec assez de réponses derrière.
+        assezDeDonnees: steps.some((s) => s.questionsPosees >= 10),
+        noms: Object.fromEntries(names),
+      };
+    },
+
     classGrid(classId, levelId) {
       const students = repos.users.listByClass(classId);
       const ids = students.map((s) => s.id);

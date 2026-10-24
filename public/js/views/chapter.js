@@ -152,7 +152,9 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
   let score;
   let answered;
   let started;
+  let questionStarted;
   let results;
+  let detail; // une entrée par question : ce qui a été demandé, ce qui a été répondu
   let alive = true;
 
   function start() {
@@ -161,8 +163,32 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
     score = 0;
     answered = false;
     results = [];
+    detail = [];
     started = Date.now();
+    questionStarted = Date.now();
     drawQuestion();
+  }
+
+  // Texte lisible d'une question et d'une réponse, pour le suivi de l'enseignant.
+  // On retire le balisage : ce qui est enregistré doit rester court et lisible.
+  const plain = (html) =>
+    String(html ?? '')
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 300);
+
+  // Ce que l'élève a répondu, dit en clair même pour un QCM.
+  function answerText(q, raw) {
+    if (q.input.kind === 'choice') return plain(q.input.options?.[Number(raw)] ?? raw);
+    return String(raw ?? '').trim().slice(0, 120);
+  }
+
+  function expectedText(q) {
+    const e = q.check?.expected;
+    if (e === undefined || e === null) return '';
+    if (q.input.kind === 'choice') return plain(q.input.options?.[Number(e)] ?? e);
+    return String(e).slice(0, 120);
   }
 
   const pips = () =>
@@ -231,6 +257,14 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
       hint.hidden = true;
       answered = true;
       results.push(res.ok);
+      detail.push({
+        position: i + 1,
+        prompt: plain(q.prompt),
+        expected: expectedText(q),
+        given: answerText(q, raw),
+        ok: res.ok,
+        durationS: Math.max(0, Math.round((Date.now() - questionStarted) / 1000)),
+      });
       if (res.ok) score++;
       if (input) {
         input.readOnly = true;
@@ -253,6 +287,7 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
   function next() {
     if (i + 1 < questions.length) {
       i++;
+      questionStarted = Date.now();
       drawQuestion();
     } else finish();
   }
@@ -272,7 +307,7 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
     pane.querySelector('[data-again]').onclick = start;
     bindNav();
     try {
-      const res = await sendScore({ score, total: questions.length, durationS });
+      const res = await sendScore({ score, total: questions.length, durationS, questions: detail });
       if (!alive) return;
       pane.querySelector('.save-state').textContent = res?.saved === false ? 'Aperçu : le score n’est pas enregistré.' : 'Score enregistré.';
       onFinish(res);

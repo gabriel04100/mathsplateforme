@@ -132,7 +132,16 @@ export async function teacherClassView({ el, params: [classId], query }) {
   }
 
   function gridHtml(g) {
-    const head = g.chapters.map((c, k) => `<th scope="col" title="${esc(c.title)}"><span class="th-num">${k + 1}</span><span class="th-title">${esc(c.title)}</span></th>`).join('');
+    // L'en-tête de chaque chapitre mène à son diagnostic : c'est là que le prof
+    // va quand une colonne est rouge.
+    const head = g.chapters
+      .map(
+        (c, k) => `<th scope="col" title="Voir où ça coince dans « ${esc(c.title)} »">
+          <a href="/prof/classe/${classId}/ou-ca-coince/${encodeURIComponent(c.id)}" data-link class="th-link">
+            <span class="th-num">${k + 1}</span><span class="th-title">${esc(c.title)}</span>
+          </a></th>`
+      )
+      .join('');
     const rows = g.students
       .map((s) => {
         const pos = s.lastPosition;

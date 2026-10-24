@@ -237,7 +237,12 @@ function createAccountsService({ repos, auth }) {
 
     resetProgress(teacherId, studentId) {
       const u = ownedStudent(teacherId, studentId);
-      repos.progress.resetForUser(u.id);
+      repos.transaction(() => {
+        repos.progress.resetForUser(u.id);
+        // Le détail des réponses part avec : remettre à zéro doit tout effacer,
+        // sinon le diagnostic continuerait de compter d'anciennes erreurs.
+        repos.questionResults.resetForUser(u.id);
+      });
     },
 
     async createTeacher({ username, password, displayName }) {

@@ -5,6 +5,8 @@
 // La validation s'appuie sur le même moteur que l'éditeur (public/js/exercises/
 // template.js) : impossible d'enregistrer un modèle que le navigateur ne saurait
 // pas jouer. Le module est en ES ; on le charge une fois, à la demande.
+const { cleanQuestionDetail } = require('./question-detail');
+
 const LEVELS = ['6e', '5e', '4e', '3e'];
 const MAX_PER_TEACHER = 500;
 const CUSTOM_CHAPTER_ID = 'custom'; // espace de noms dans step_progress / attempts
@@ -186,7 +188,7 @@ function createExercisesService({ repos, shared }) {
 
     // Enregistre une série. Les exercices de l'enseignant vivent hors parcours :
     // ils alimentent l'historique et le meilleur score, pas le déblocage des chapitres.
-    recordAttempt(user, id, { score, total, durationS }) {
+    recordAttempt(user, id, { score, total, durationS, questions }) {
       const { exercise } = this.getPlayable(user, id);
       if (user.role === 'teacher') return { passed: score >= exercise.pass, everPassed: false, pass: exercise.pass, bestScore: score, saved: false };
       const s = Number(score);
@@ -197,7 +199,10 @@ function createExercisesService({ repos, shared }) {
       const stepId = exercise.id;
       let result;
       repos.transaction(() => {
-        repos.attempts.create({ userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, mode: 'libre', score: s, total: t, durationS });
+        const attemptId = repos.attempts.create({ userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, mode: 'libre', score: s, total: t, durationS });
+        repos.questionResults.createMany(
+          cleanQuestionDetail(questions, { attemptId, userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, total: t })
+        );
         const prev = repos.progress.get(user.id, CUSTOM_CHAPTER_ID, stepId);
         const better = !prev || prev.best_score == null || s > prev.best_score;
         const passed = prev?.status === 'passed' || s >= exercise.pass;

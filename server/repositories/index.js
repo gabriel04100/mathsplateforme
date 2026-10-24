@@ -101,9 +101,11 @@ function createRepositories(db) {
 
   const attempts = {
     create: ({ userId, chapterId, stepId, mode, score, total, durationS }) =>
-      db
-        .prepare('INSERT INTO attempts (user_id, chapter_id, step_id, mode, score, total, duration_s) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .run(userId, chapterId, stepId, mode, score, total, durationS ?? null),
+      Number(
+        db
+          .prepare('INSERT INTO attempts (user_id, chapter_id, step_id, mode, score, total, duration_s) VALUES (?, ?, ?, ?, ?, ?, ?)')
+          .run(userId, chapterId, stepId, mode, score, total, durationS ?? null).lastInsertRowid
+      ),
     recentForUser: (userId, limit = 10) =>
       db.prepare('SELECT * FROM attempts WHERE user_id = ? ORDER BY created_at DESC, id DESC LIMIT ?').all(userId, limit),
     lastActivityForUsers: (userIds) => {
@@ -111,6 +113,64 @@ function createRepositories(db) {
       const ph = userIds.map(() => '?').join(',');
       return db.prepare(`SELECT user_id, MAX(created_at) AS last_at, COUNT(*) AS n FROM attempts WHERE user_id IN (${ph}) GROUP BY user_id`).all(...userIds);
     },
+  };
+
+  // Détail question par question : la matière première du diagnostic.
+  const questionResults = {
+    createMany: (rows) => {
+      if (!rows.length) return;
+      const stmt = db.prepare(
+        `INSERT INTO question_results (attempt_id, user_id, chapter_id, step_id, position, prompt, expected, given, ok, duration_s)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      );
+      for (const r of rows) {
+        stmt.run(r.attemptId, r.userId, r.chapterId, r.stepId, r.position, r.prompt, r.expected, r.given, r.ok ? 1 : 0, r.durationS ?? null);
+      }
+    },
+
+    // Taux de réussite par étape, pour une classe.
+    statsByStep: (userIds, chapterId) => {
+      if (!userIds.length) return [];
+      const ph = userIds.map(() => '?').join(',');
+      return db
+        .prepare(
+          `SELECT step_id, COUNT(*) AS posees, SUM(ok) AS justes,
+                  COUNT(DISTINCT user_id) AS eleves, AVG(duration_s) AS temps_moyen
+           FROM question_results
+           WHERE chapter_id = ? AND user_id IN (${ph})
+           GROUP BY step_id`
+        )
+        .all(chapterId, ...userIds);
+    },
+
+    // Les réponses fausses les plus fréquentes : c'est là que se lit l'erreur
+    // commune à toute la classe (un signe oublié, une règle inversée…).
+    commonMistakes: (userIds, chapterId, limit = 12) => {
+      if (!userIds.length) return [];
+      const ph = userIds.map(() => '?').join(',');
+      return db
+        .prepare(
+          `SELECT step_id, prompt, expected, given, COUNT(*) AS n, COUNT(DISTINCT user_id) AS eleves
+           FROM question_results
+           WHERE chapter_id = ? AND ok = 0 AND given <> '' AND user_id IN (${ph})
+           GROUP BY step_id, expected, given
+           ORDER BY eleves DESC, n DESC
+           LIMIT ?`
+        )
+        .all(chapterId, ...userIds, limit);
+    },
+
+    // Les dernières erreurs d'un élève, pour la remédiation individuelle.
+    recentMistakesForUser: (userId, limit = 20) =>
+      db
+        .prepare(
+          `SELECT chapter_id, step_id, prompt, expected, given, created_at
+           FROM question_results WHERE user_id = ? AND ok = 0
+           ORDER BY created_at DESC, id DESC LIMIT ?`
+        )
+        .all(userId, limit),
+
+    resetForUser: (userId) => db.prepare('DELETE FROM question_results WHERE user_id = ?').run(userId),
   };
 
   const positions = {
@@ -326,7 +386,7 @@ function createRepositories(db) {
   };
 
   return {
-    users, classes, sessions, progress, attempts, positions,
+    users, classes, sessions, progress, attempts, questionResults, positions,
     customExercises, customChapters, chapterOverrides, gameScores,
     transaction: (fn) => db.transaction(fn)(),
   };

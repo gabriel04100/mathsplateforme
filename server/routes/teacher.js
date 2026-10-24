@@ -36,6 +36,12 @@ module.exports = function teacherRoutes({ accounts, progress, exercises, chapter
     res.json({ class: cls, level, ...progress.classGrid(cls.id, level) });
   });
 
+  // « Où ça coince » : diagnostic d'un chapitre pour une classe.
+  r.get('/classes/:id/diagnostic/:chapterId', (req, res) => {
+    const cls = accounts.getClass(tid(req), req.params.id);
+    res.json(progress.chapterDiagnostic(cls.id, req.params.chapterId));
+  });
+
   r.patch('/students/:id', async (req, res) => res.json(await accounts.updateStudent(tid(req), req.params.id, req.body || {})));
   r.delete('/students/:id', (req, res) => {
     accounts.deleteStudent(tid(req), req.params.id);

@@ -11,6 +11,7 @@ import { teacherHomeView, teacherClassView } from './views/teacher.js';
 import { teacherExercisesView, teacherExerciseEditorView } from './views/exercise-editor.js';
 import { teacherChapterEditorView } from './views/chapter-editor.js';
 import { teacherParcoursView } from './views/parcours.js';
+import { teacherDiagnosticView } from './views/diagnostic.js';
 import { customExerciseView } from './views/custom-exercise.js';
 import { gamesHomeView, gameView } from './views/games.js';
 
@@ -29,6 +30,7 @@ const routes = [
   { path: /^\/jeux\/([a-z0-9-]+)$/, view: gameView, nav: 'games' },
   { path: /^\/prof$/, view: teacherHomeView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/classe\/(\d+)$/, view: teacherClassView, nav: 'teacher', role: 'teacher' },
+  { path: /^\/prof\/classe\/(\d+)\/ou-ca-coince\/([a-z0-9-]+)$/, view: teacherDiagnosticView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/exercices$/, view: teacherExercisesView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/exercices\/nouveau$/, view: teacherExerciseEditorView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/exercices\/(\d+)$/, view: teacherExerciseEditorView, nav: 'teacher', role: 'teacher' },
