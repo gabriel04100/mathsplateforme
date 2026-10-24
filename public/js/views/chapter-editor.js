@@ -171,7 +171,7 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
 
   function describeStep(s) {
     if (s.type === 'lesson') return `${(s.blocks || []).length} bloc${(s.blocks || []).length > 1 ? 's' : ''}`;
-    if (s.type === 'animation') return s.widget || 'à choisir';
+    if (s.type === 'animation') return palette.widgets.find((w) => w.id === s.widget)?.label || 'animation à choisir';
     if (s.source === 'custom') {
       const ex = palette.exercises.find((e) => e.id === Number(s.exerciseId));
       return ex ? ex.title : 'exercice à choisir';
@@ -198,7 +198,7 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
           type === 'lesson'
             ? { id: newId('cours'), type, title: 'Le cours', blocks: [{ type: 'definition', title: '', text: '' }] }
             : type === 'animation'
-              ? { id: newId('anim'), type, title: 'Animation', widget: palette.widgets[0], intro: '' }
+              ? { id: newId('anim'), type, title: 'Animation', widget: palette.widgets[0]?.id, intro: '' }
               : { id: newId('ex'), type, title: 'Exercices', source: 'generator', generator: palette.generators[0], count: 6, pass: 5 };
         model.steps.push(step);
         selected = model.steps.length - 1;
@@ -345,14 +345,29 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
   // --- Animation : choisir parmi celles de la plateforme ---
 
   function drawAnimation(step, body) {
+    const choisie = () => palette.widgets.find((w) => w.id === step.widget);
     body.innerHTML = `
       <label class="field"><span>Animation</span>
-        <select data-widget>${palette.widgets.map((w) => `<option${w === step.widget ? ' selected' : ''}>${esc(w)}</option>`).join('')}</select></label>
+        <select data-widget>${palette.widgets
+          .map((w) => `<option value="${esc(w.id)}"${w.id === step.widget ? ' selected' : ''}>${esc(w.label)}${w.level ? ` — ${esc(w.level)}` : ''}</option>`)
+          .join('')}</select></label>
+      <p class="widget-hint" data-widget-hint></p>
       <label class="field"><span>Introduction <span class="muted">(facultatif)</span></span>
         <textarea data-intro rows="2" placeholder="Une phrase pour présenter l’animation">${esc(step.intro || '')}</textarea></label>
-      <p class="muted small">Les animations sont fournies avec la plateforme. Pour en ajouter une nouvelle, il faut passer par le code (voir le README).</p>`;
+      <p class="muted small">Le niveau indiqué est celui où l’animation a été conçue : rien n’empêche de la réutiliser ailleurs. Pour en ajouter une nouvelle, il faut passer par le code (voir le README).</p>`;
+
+    const hintEl = body.querySelector('[data-widget-hint]');
+    const paintHint = () => {
+      const w = choisie();
+      hintEl.innerHTML = w?.hint ? w.hint : '';
+      hintEl.hidden = !w?.hint;
+      renderMath(hintEl);
+    };
+    paintHint();
+
     body.querySelector('[data-widget]').onchange = (e) => {
       step.widget = e.target.value;
+      paintHint();
       touch();
       drawSteps();
     };

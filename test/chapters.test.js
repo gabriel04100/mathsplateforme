@@ -62,8 +62,20 @@ test('l’enseignant écrit un chapitre complet et le publie', async () => {
   // La palette annonce les blocs, animations et exercices disponibles.
   const palette = (await prof.get('/teacher/chapters/palette')).body;
   assert.ok(palette.blocks.some((b) => b.id === 'definition'), 'le bloc Définition est proposé');
-  assert.ok(palette.widgets.includes('sieve'));
   assert.ok(palette.generators.includes('arith-prime'));
+
+  // Les animations arrivent avec un nom lisible : l'identifiant technique ne
+  // doit jamais être ce que l'enseignant lit dans la liste déroulante.
+  const crible = palette.widgets.find((w) => w.id === 'sieve');
+  assert.ok(crible, 'le crible est proposé');
+  assert.equal(crible.label, 'Crible d’Ératosthène');
+  assert.equal(crible.level, '3e');
+  assert.ok(crible.hint.length > 20, 'chaque animation explique ce que fait l’élève');
+  for (const w of palette.widgets) {
+    assert.notEqual(w.label, w.id, `l’animation « ${w.id} » n’a pas de nom lisible`);
+    // Les libellés partent dans un <option>, où KaTeX ne rend rien.
+    assert.ok(!w.label.includes('$'), `l’animation « ${w.id} » a du LaTeX dans son nom`);
+  }
 
   const created = await prof.post('/teacher/chapters', {
     title: 'Les nombres premiers',

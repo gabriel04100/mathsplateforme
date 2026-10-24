@@ -441,10 +441,16 @@ function createChaptersService({ repos, content, exercises, shared }) {
     },
 
     // Ce que l'éditeur propose : blocs, animations et types d'exercices disponibles.
+    // Les animations partent avec leur nom lisible, jamais leur identifiant seul.
     palette(teacherId) {
       return {
         blocks: richtext.BLOCK_TYPES,
-        widgets: Object.keys(widgets.WIDGETS),
+        widgets: Object.keys(widgets.WIDGETS).map((id) => ({
+          id,
+          label: widgets.WIDGET_INFO[id]?.label || id,
+          level: widgets.WIDGET_INFO[id]?.level || null,
+          hint: widgets.WIDGET_INFO[id]?.hint || '',
+        })),
         generators: Object.keys(generators.GENERATORS),
         exercises: exercises.listForTeacher(teacherId).map((e) => ({ id: e.id, title: e.title, level: e.level, count: e.count, pass: e.pass })),
       };

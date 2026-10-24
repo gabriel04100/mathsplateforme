@@ -411,3 +411,54 @@ export const WIDGETS = {
   sieve,
   'affine-graph': affineGraph,
 };
+
+// Ce que l'enseignant lit dans l'éditeur : un nom clair, le niveau d'origine et
+// ce que l'élève fait concrètement. Rien ici n'est technique — les identifiants
+// ci-dessus ne devraient jamais apparaître dans l'interface.
+export const WIDGET_INFO = {
+  'number-line-zoom': {
+    label: 'Droite graduée avec zoom',
+    level: '6e',
+    hint: 'L’élève zoome entre deux graduations pour placer un nombre décimal au bon endroit.',
+  },
+  'fraction-bars': {
+    label: 'Fractions en barres',
+    level: '6e',
+    hint: 'Deux barres partagées côte à côte : on voit d’un coup d’œil quelle fraction est la plus grande.',
+  },
+  'relative-moves': {
+    label: 'Relatifs : avancer et reculer',
+    level: '5e',
+    hint: 'Additionner un nombre relatif, c’est se déplacer sur la droite graduée. L’élève règle les deux nombres et voit le trajet.',
+  },
+  'priority-steps': {
+    label: 'Calcul pas à pas',
+    level: '5e',
+    hint: 'Une expression se simplifie une opération à la fois, dans l’ordre des priorités, en cliquant sur « Étape suivante ».',
+  },
+  'area-model': {
+    label: 'Distributivité par les aires',
+    level: '4e',
+    hint: 'Un rectangle découpé en deux morceaux : son aire se calcule en une fois ou morceau par morceau. C’est $k(a+b) = ka + kb$ vu en image.',
+  },
+  pythagoras: {
+    label: 'Pythagore : les carrés des côtés',
+    level: '4e',
+    hint: 'Les carrés construits sur les trois côtés d’un triangle rectangle : l’élève règle les côtés et constate que les deux petits carrés font le grand.',
+  },
+  sieve: {
+    label: 'Crible d’Ératosthène',
+    level: '3e',
+    hint: 'On barre les multiples de 2, puis de 3, puis de 5… et les nombres premiers restent.',
+  },
+  'affine-graph': {
+    // Pas de LaTeX dans les libellés : ils s'affichent dans une liste
+    // déroulante, où KaTeX ne peut rien rendre.
+    label: 'Droite y = ax + b',
+    level: '3e',
+    hint: 'L’élève fait varier $a$ et $b$ et voit la droite pivoter et monter : pente et ordonnée à l’origine.',
+  },
+};
+
+// Nom lisible d'une animation, avec repli sur l'identifiant si elle n'est pas décrite.
+export const widgetLabel = (id) => WIDGET_INFO[id]?.label || id;
