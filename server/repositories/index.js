@@ -173,6 +173,35 @@ function createRepositories(db) {
     resetForUser: (userId) => db.prepare('DELETE FROM question_results WHERE user_id = ?').run(userId),
   };
 
+  // Niveau de confiance déclaré par l'élève à la fin d'un chapitre (1 à 4).
+  const confidence = {
+    set: (userId, chapterId, level) =>
+      db
+        .prepare(
+          `INSERT INTO chapter_confidence (user_id, chapter_id, level, updated_at)
+           VALUES (?, ?, ?, strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+           ON CONFLICT (user_id, chapter_id) DO UPDATE SET level = excluded.level, updated_at = excluded.updated_at`
+        )
+        .run(userId, chapterId, level),
+    get: (userId, chapterId) => db.prepare('SELECT * FROM chapter_confidence WHERE user_id = ? AND chapter_id = ?').get(userId, chapterId),
+    listForUser: (userId) => db.prepare('SELECT * FROM chapter_confidence WHERE user_id = ?').all(userId),
+    // Ce que déclare une classe sur un chapitre : la moyenne cache les écarts,
+    // on renvoie donc la répartition.
+    forClass: (userIds, chapterId) => {
+      if (!userIds.length) return [];
+      const ph = userIds.map(() => '?').join(',');
+      return db
+        .prepare(`SELECT level, COUNT(*) AS n FROM chapter_confidence WHERE chapter_id = ? AND user_id IN (${ph}) GROUP BY level`)
+        .all(chapterId, ...userIds);
+    },
+    // Les chapitres qu'un élève dit mal maîtriser : matière des révisions flash.
+    fragilesForUser: (userId, maxLevel = 2) =>
+      db
+        .prepare('SELECT chapter_id, level FROM chapter_confidence WHERE user_id = ? AND level <= ? ORDER BY level, updated_at')
+        .all(userId, maxLevel),
+    resetForUser: (userId) => db.prepare('DELETE FROM chapter_confidence WHERE user_id = ?').run(userId),
+  };
+
   const positions = {
     get: (userId) => db.prepare('SELECT * FROM last_position WHERE user_id = ?').get(userId),
     set: (userId, chapterId, stepId, mode) =>
@@ -434,7 +463,7 @@ function createRepositories(db) {
   };
 
   return {
-    users, classes, sessions, progress, attempts, questionResults, positions,
+    users, classes, sessions, progress, attempts, questionResults, confidence, positions,
     customExercises, customChapters, chapterOverrides, documents, gameScores,
     transaction: (fn) => db.transaction(fn)(),
   };

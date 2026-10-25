@@ -104,12 +104,23 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
     };
   }
 
-  function requireStep(user, chapterId, stepId) {
+  function requireStep(user, chapterId, stepId, { mode = 'parcours' } = {}) {
     const ch = chapterOf(user, chapterId);
     // Un enseignant peut parcourir ses propres brouillons ; un élève, non.
     if (!ch || (ch.status !== 'published' && user.role !== 'teacher')) throw new ProgressError('Chapitre introuvable', 404);
     const step = ch.steps.find((s) => s.id === stepId);
     if (!step) throw new ProgressError('Étape introuvable', 404);
+
+    // Le déblocage séquentiel est une règle, pas une décoration : on la vérifie
+    // ici aussi, sans quoi un élève pourrait valider le chapitre 5 en janvier
+    // en appelant l'API directement. Les exercices libres y échappent — c'est
+    // précisément leur raison d'être.
+    if (user.role !== 'teacher' && mode !== 'libre') {
+      const etat = levelState(user, ch.level, indexProgress(repos.progress.listForUser(user.id))).find((s) => s.chapterId === ch.id);
+      if (etat && !etat.unlocked) {
+        throw new ProgressError('Ce chapitre se débloquera quand tu auras terminé le précédent', 403);
+      }
+    }
     return { ch, step };
   }
 
@@ -127,7 +138,7 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
 
     // Ouverture d'une étape (cours, animation ou exercice) : met à jour « où j'en suis ».
     recordVisit(user, { chapterId, stepId, mode = 'parcours' }) {
-      const { step } = requireStep(user, chapterId, stepId);
+      const { step } = requireStep(user, chapterId, stepId, { mode });
       const userId = user.id;
       repos.transaction(() => {
         const existing = repos.progress.get(userId, chapterId, stepId);
@@ -140,7 +151,7 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
     },
 
     recordAttempt(user, { chapterId, stepId, score, total, durationS, mode = 'parcours', questions }) {
-      const { step } = requireStep(user, chapterId, stepId);
+      const { step } = requireStep(user, chapterId, stepId, { mode });
       const userId = user.id;
       if (step.type !== 'exercise') throw new ProgressError("Cette étape n'est pas un exercice");
       score = Number(score);
@@ -220,6 +231,79 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
     },
 
     // Vue enseignant : une ligne par élève, une colonne par chapitre du niveau.
+    // ---------- Confiance déclarée ----------
+
+    // L'élève dit, en fin de chapitre, s'il se sent à l'aise. De 1 (perdu) à 4.
+    setConfidence(user, { chapterId, level }) {
+      const ch = chapterOf(user, chapterId);
+      if (!ch) throw new ProgressError('Chapitre introuvable', 404);
+      const n = Number(level);
+      if (!Number.isInteger(n) || n < 1 || n > 4) throw new ProgressError('Niveau de confiance invalide');
+      repos.confidence.set(user.id, ch.id, n);
+      return { chapterId: ch.id, level: n };
+    },
+
+    confidenceFor: (user, chapterId) => repos.confidence.get(user.id, chapterId)?.level ?? null,
+
+    // ---------- Révision flash ----------
+
+    // Deux questions, pas plus, tirées d'un chapitre déjà terminé. On choisit
+    // en priorité ce que l'élève dit mal maîtriser, puis ce qu'il a réussi le
+    // moins bien — et jamais un chapitre vu dans la journée.
+    revisionFlash(user) {
+      if (user.role === 'teacher' || !user.class_id) return null;
+      const rows = repos.progress.listForUser(user.id);
+      const idx = indexProgress(rows);
+      const cls = repos.classes.findById(user.class_id);
+      if (!cls) return null;
+
+      const termines = levelState(user, cls.level, idx)
+        .filter((s) => s.status === 'done')
+        .map((s) => s.chapterId);
+      if (!termines.length) return null;
+
+      const confiance = new Map(repos.confidence.listForUser(user.id).map((c) => [c.chapter_id, c.level]));
+      const hier = new Date(Date.now() - 20 * 3600 * 1000).toISOString();
+      const recents = new Set(
+        rows.filter((r) => r.updated_at > hier).map((r) => r.chapter_id)
+      );
+
+      const candidats = termines
+        .filter((id) => !recents.has(id))
+        .map((id) => {
+          const ch = chapterOf(user, id);
+          const exos = (ch?.steps || []).filter((s) => s.type === 'exercise');
+          const scores = exos.map((s) => {
+            const r = idx.get(id)?.get(s.id);
+            return r?.best_total ? r.best_score / r.best_total : 1;
+          });
+          return {
+            chapterId: id,
+            titre: ch?.title || id,
+            exercices: exos,
+            // Plus la confiance est basse et le score faible, plus c'est prioritaire.
+            priorite: (confiance.get(id) ?? 3) + (scores.length ? (scores.reduce((a, b) => a + b, 0) / scores.length) * 4 : 4),
+          };
+        })
+        .filter((c) => c.exercices.length)
+        .sort((a, b) => a.priorite - b.priorite);
+
+      if (!candidats.length) return null;
+      const choisi = candidats[0];
+      // Deux exercices au plus : une révision flash doit rester flash.
+      const etapes = choisi.exercices.slice(0, 2).map((s) => ({
+        stepId: s.id,
+        title: s.title,
+        ...(s.template ? { template: s.template } : { generator: s.generator, params: s.params || {} }),
+      }));
+      return {
+        chapterId: choisi.chapterId,
+        chapterTitle: choisi.titre,
+        confiance: confiance.get(choisi.chapterId) ?? null,
+        etapes,
+      };
+    },
+
     // « Où ça coince » : pour un chapitre et une classe, le taux de réussite
     // étape par étape et les réponses fausses qui reviennent le plus souvent.
     chapterDiagnostic(classId, chapterId) {

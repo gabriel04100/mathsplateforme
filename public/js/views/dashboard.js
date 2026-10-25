@@ -2,6 +2,7 @@
 import { api } from '../api.js';
 import { state } from '../app.js';
 import { esc, relativeTime, STEP_KIND, stepIcon, progressBar } from '../ui.js';
+import { monterRevisionFlash } from './revision.js';
 
 const stepUrl = (p) => (p.mode === 'libre' ? `/libre/${p.chapterId}/${p.stepId}` : `/chapitre/${p.chapterId}/${p.stepId}`);
 
@@ -40,6 +41,7 @@ export async function dashboardView({ el }) {
       <h1>Bonjour ${firstName}</h1>
       <p class="muted">${d.className ? `Classe ${esc(d.className)}` : ''}</p>
     </header>
+    <div id="revision-flash"></div>
     <div class="dash-grid">
       <div class="dash-main">
         ${resume}
@@ -81,4 +83,8 @@ export async function dashboardView({ el }) {
       </aside>
     </div>
   </section>`;
+
+  // Proposition de révision, après l'affichage : elle ne doit jamais retarder
+  // le tableau de bord, et son absence ne change rien à la page.
+  monterRevisionFlash(el.querySelector('#revision-flash')).catch(() => {});
 }

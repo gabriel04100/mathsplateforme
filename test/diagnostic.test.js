@@ -3,6 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
+const { unlockUpTo } = require('./helpers');
 
 let server;
 let base;
@@ -79,6 +80,8 @@ test('mise en place : une classe de 3e qui travaille le calcul littéral', async
   // Trois élèves sur cinq font l'erreur de signe sur la plupart des questions.
   for (const [i] of NOMS.entries()) {
     const eleve = await login(client(), `el${i + 1}`, 'soleil42');
+    // Le parcours est séquentiel : on termine les chapitres précédents.
+    await unlockUpTo(eleve, '3e', CHAPITRE);
     assert.equal((await eleve.post('/progress/attempt', serie(i < 3 ? 5 : 1))).status, 200);
   }
 });

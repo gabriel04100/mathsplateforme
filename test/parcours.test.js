@@ -3,6 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
+const { unlockUpTo, completeChapter } = require('./helpers');
 
 let server;
 let base;
@@ -78,6 +79,7 @@ test('modifier un chapitre livré ne change que le parcours de ses classes', asy
 
   // L'élève voit la version de son professeur, rendue en HTML sûr.
   const eleve = await login(client(), 'tom', 'soleil42');
+  await unlockUpTo(eleve, '6e', FILE_CHAPTER);
   const seen = (await eleve.get(`/chapters/${FILE_CHAPTER}`)).body.chapter;
   assert.equal(seen.title, 'Les fractions (ma version)');
   assert.ok(seen.steps[0].blocks[0].html.includes('<strong>relis bien</strong>'));
@@ -167,8 +169,60 @@ test('un chapitre « Bientôt » peut être rempli et publié par l’enseignant
 
   const seenAfter = (await eleve.get('/levels/6e')).body.chapters.find((c) => c.id === draft.id);
   assert.equal(seenAfter.status, 'published', 'il entre dans le parcours');
+  await unlockUpTo(eleve, '6e', draft.id);
   const full = (await eleve.get(`/chapters/${draft.id}`)).body.chapter;
   assert.ok(full.steps[0].blocks[0].html.includes('$a+b=b+a$'));
+});
+
+test('le parcours séquentiel ne se contourne pas par l’API', async () => {
+  const eleve = await login(client(), 'tom', 'soleil42');
+  // Tom n'a encore rien fait en 4e : le premier chapitre est ouvert, le second non.
+  const chapitres = (await eleve.get('/levels/4e')).body.chapters.filter((c) => c.status === 'published');
+  const [premier, second] = chapitres;
+  assert.ok(second, 'il faut au moins deux chapitres publiés pour ce test');
+
+  // Le contenu d'un chapitre verrouillé n'est pas servi.
+  const vu = (await eleve.get(`/chapters/${second.id}`)).body;
+  assert.equal(vu.progress.unlocked, false);
+  const cours = vu.chapter.steps.find((s) => s.type === 'lesson');
+  assert.equal(cours.blocks, undefined, 'le cours d’un chapitre verrouillé ne doit pas être envoyé');
+  const exo = vu.chapter.steps.find((s) => s.type === 'exercise');
+  assert.equal(exo.generator, undefined, 'les paramètres d’exercice non plus');
+
+  // Et on ne peut pas y enregistrer de travail.
+  const triche = await eleve.post('/progress/attempt', { chapterId: second.id, stepId: exo.id, score: 1, total: 1, durationS: 5 });
+  assert.equal(triche.status, 403);
+  assert.match(triche.body.error, /se débloquera/);
+  assert.equal((await eleve.post('/progress/visit', { chapterId: second.id, stepId: exo.id })).status, 403);
+
+  // Le premier chapitre, lui, est bien ouvert.
+  assert.equal((await eleve.get(`/chapters/${premier.id}`)).body.progress.unlocked, true);
+  await completeChapter(eleve, premier.id);
+
+  // Une fois le premier terminé, le second s'ouvre.
+  const apres = (await eleve.get(`/chapters/${second.id}`)).body;
+  assert.equal(apres.progress.unlocked, true);
+  assert.ok(apres.chapter.steps.find((s) => s.type === 'lesson').blocks, 'le cours est désormais servi');
+});
+
+test('les exercices libres restent accessibles hors parcours', async () => {
+  const eleve = await login(client(), 'tom', 'soleil42');
+  // Un chapitre encore verrouillé en 5e : ses exercices restent jouables en
+  // mode libre, c'est toute la raison d'être des exercices libres.
+  const chapitres = (await eleve.get('/levels/5e')).body.chapters.filter((c) => c.status === 'published');
+  const verrouille = chapitres[1];
+  assert.equal((await eleve.get(`/chapters/${verrouille.id}`)).body.progress.unlocked, false);
+
+  const exo = verrouille.steps.find((s) => s.type === 'exercise');
+  const libre = await eleve.post('/progress/attempt', {
+    chapterId: verrouille.id,
+    stepId: exo.id,
+    score: exo.count,
+    total: exo.count,
+    durationS: 30,
+    mode: 'libre',
+  });
+  assert.equal(libre.status, 200, 'le mode libre échappe au verrou');
 });
 
 test('on ne modifie pas un chapitre qui n’existe pas', async () => {

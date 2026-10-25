@@ -77,7 +77,13 @@ export async function teacherHomeView({ el, query }) {
 }
 
 export async function teacherClassView({ el, params: [classId], query }) {
-  let tab = query.get('onglet') === 'eleves' ? 'eleves' : 'suivi';
+  // Le chapeau du tirage au sort survit aux changements d'onglet.
+  let tirageChapeau = [];
+  let tiragePasses = [];
+  let tirageAnim = null;
+
+  const ONGLETS = ['suivi', 'eleves', 'tirage'];
+  let tab = ONGLETS.includes(query.get('onglet')) ? query.get('onglet') : 'suivi';
   let gridLevel = null;
   let lastCreated = null;
 
@@ -102,15 +108,16 @@ export async function teacherClassView({ el, params: [classId], query }) {
       <div class="seg" role="tablist">
         <button type="button" role="tab" class="seg-btn" aria-selected="${tab === 'suivi'}" data-tab="suivi">Suivi de la progression</button>
         <button type="button" role="tab" class="seg-btn" aria-selected="${tab === 'eleves'}" data-tab="eleves">Élèves et identifiants</button>
+        <button type="button" role="tab" class="seg-btn" aria-selected="${tab === 'tirage'}" data-tab="tirage">Tirage au sort</button>
       </div>
-      <div class="tabpanel">${tab === 'suivi' ? gridHtml(grid) : studentsHtml(students, cls)}</div>
+      <div class="tabpanel">${tab === 'suivi' ? gridHtml(grid) : tab === 'tirage' ? tirageHtml(students) : studentsHtml(students, cls)}</div>
     </section>`;
 
     el.querySelectorAll('[data-tab]').forEach(
       (b) =>
         (b.onclick = () => {
           tab = b.dataset.tab;
-          history.replaceState(null, '', `/prof/classe/${classId}${tab === 'eleves' ? '?onglet=eleves' : ''}`);
+          history.replaceState(null, '', `/prof/classe/${classId}${tab === 'suivi' ? '' : `?onglet=${tab}`}`);
           draw();
         })
     );
@@ -130,6 +137,7 @@ export async function teacherClassView({ el, params: [classId], query }) {
       navigate('/prof');
     };
     if (tab === 'suivi') bindGrid();
+    else if (tab === 'tirage') bindTirage(students);
     else bindStudents(cls, students);
   }
 
@@ -176,6 +184,105 @@ export async function teacherClassView({ el, params: [classId], query }) {
         gridLevel = sel.value;
         draw();
       };
+  }
+
+  // ---------- Tirage au sort ----------
+  // Pour interroger sans toujours tomber sur les mêmes. Les élèves déjà tirés
+  // sont mis de côté jusqu'à ce que toute la classe soit passée : c'est ce qui
+  // distingue un vrai tirage d'un simple hasard, qui oublie et répète.
+  function tirageHtml(students) {
+    const actifs = students.filter((s) => s.active);
+    return `
+      <div class="tirage">
+        ${
+          actifs.length
+            ? `<div class="tirage-scene">
+                <p class="tirage-nom" data-nom>—</p>
+                <p class="muted" data-sous>Appuie sur « Tirer un élève ».</p>
+              </div>
+              <div class="tirage-actions">
+                <button type="button" class="btn big" data-tirer>Tirer un élève</button>
+                <label class="field inline"><span>Combien ?</span>
+                  <input type="number" data-combien min="1" max="${actifs.length}" value="1"></label>
+                <button type="button" class="linkbtn" data-reset>Remettre tout le monde dans le chapeau</button>
+              </div>
+              <div class="tirage-etat">
+                <p class="muted small"><span data-restants>${actifs.length}</span> élève(s) pas encore tiré(s) sur ${actifs.length}.</p>
+                <ul class="tirage-passes" data-passes></ul>
+              </div>`
+            : '<p class="empty">Aucun élève actif dans cette classe.</p>'
+        }
+      </div>`;
+  }
+
+  function bindTirage(students) {
+    const actifs = students.filter((s) => s.active);
+    if (!actifs.length) return;
+    const nomEl = el.querySelector('[data-nom]');
+    const sousEl = el.querySelector('[data-sous]');
+    const restantsEl = el.querySelector('[data-restants]');
+    const passesEl = el.querySelector('[data-passes]');
+    const combienEl = el.querySelector('[data-combien]');
+
+    // Le chapeau survit au changement d'onglet, pas au rechargement de la page.
+    let chapeau = tirageChapeau.length ? tirageChapeau : actifs.map((s) => s.id);
+    let tires = tiragePasses;
+
+    function peindre() {
+      restantsEl.textContent = chapeau.length;
+      passesEl.innerHTML = tires
+        .map((id) => {
+          const s = actifs.find((x) => x.id === id);
+          return s ? `<li>${esc(s.displayName)}</li>` : '';
+        })
+        .join('');
+      tirageChapeau = chapeau;
+      tiragePasses = tires;
+    }
+
+    function tirer() {
+      const combien = Math.max(1, Math.min(actifs.length, Number(combienEl.value) || 1));
+      const sortis = [];
+      for (let k = 0; k < combien; k++) {
+        if (!chapeau.length) {
+          // Tout le monde est passé : on remplit à nouveau le chapeau, en
+          // évitant de retirer tout de suite ceux qu'on vient de sortir.
+          chapeau = actifs.map((s) => s.id).filter((id) => !sortis.includes(id));
+          tires = [];
+          if (!chapeau.length) break;
+        }
+        const i = Math.floor(Math.random() * chapeau.length);
+        sortis.push(chapeau.splice(i, 1)[0]);
+      }
+      tires = [...sortis, ...tires].slice(0, actifs.length);
+
+      // Petit roulement avant d'afficher : le suspense fait partie du jeu.
+      let tours = 0;
+      clearInterval(tirageAnim);
+      tirageAnim = setInterval(() => {
+        nomEl.textContent = actifs[Math.floor(Math.random() * actifs.length)].displayName;
+        if (++tours >= 12) {
+          clearInterval(tirageAnim);
+          const noms = sortis.map((id) => actifs.find((s) => s.id === id)?.displayName).filter(Boolean);
+          nomEl.textContent = noms.join(' · ');
+          nomEl.classList.remove('pop');
+          void nomEl.offsetWidth;
+          nomEl.classList.add('pop');
+          sousEl.textContent = chapeau.length ? `Encore ${chapeau.length} élève(s) dans le chapeau.` : 'Toute la classe est passée.';
+          peindre();
+        }
+      }, 55);
+    }
+
+    el.querySelector('[data-tirer]').onclick = tirer;
+    el.querySelector('[data-reset]').onclick = () => {
+      chapeau = actifs.map((s) => s.id);
+      tires = [];
+      nomEl.textContent = '—';
+      sousEl.textContent = 'Tout le monde est de nouveau dans le chapeau.';
+      peindre();
+    };
+    peindre();
   }
 
   function studentsHtml(students, cls) {

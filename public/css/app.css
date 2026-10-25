@@ -125,30 +125,34 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-si
 .brandmark .bm-line { stroke: var(--blue); }
 .brandmark .bm-dot { fill: var(--hl); stroke: var(--ink); stroke-width: 1.6; }
 
-.dividers { display: flex; gap: 4px; flex: none; align-self: flex-end; margin-bottom: -2px; }
+/* Les niveaux : un seul bloc posé, pas quatre onglets qui flottent. Le niveau
+   courant est plein, les autres restent discrets — on lit d'abord où on est. */
+.dividers {
+  display: flex;
+  gap: 2px;
+  flex: none;
+  align-self: center;
+  padding: 3px;
+  background: var(--paper);
+  border: 2px solid var(--rule);
+  border-radius: 12px;
+}
 .divider {
   display: block;
-  min-width: 52px;
-  padding: 7px 12px 8px;
-  border: 2px solid var(--lv);
-  border-bottom-color: var(--ink);
-  border-radius: 10px 10px 0 0;
-  background: color-mix(in srgb, var(--lv) 12%, var(--paper-2));
-  color: var(--lv);
-  font: 750 1.05rem/1 var(--font-title);
+  min-width: 46px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  color: var(--muted);
+  font: 750 1rem/1 var(--font-title);
   text-align: center;
   text-decoration: none;
-  transform: translateY(5px);
-  transition: transform 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.divider:hover { transform: translateY(2px); }
+.divider:hover { background: var(--paper-2); color: var(--lv); }
 .divider.active {
   background: var(--lv);
   color: #fff;
-  border-color: var(--lv);
-  border-bottom-color: var(--lv);
-  transform: none;
-  padding-top: 10px;
+  box-shadow: 0 2px 8px -3px var(--lv);
 }
 
 /* Bloc central : les intercalaires à gauche, les liens de menu à droite.
@@ -215,8 +219,8 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-si
   .topnav { flex-direction: column-reverse; align-items: stretch; gap: 2px; }
   .navrow { gap: 14px; font-size: 0.94rem; overflow-x: auto; scrollbar-width: none; }
   .navrow::-webkit-scrollbar { display: none; }
-  .dividers { justify-content: space-between; }
-  .divider { flex: 1; min-width: 0; padding: 6px 4px 7px; font-size: 0.98rem; }
+  .dividers { justify-content: space-between; width: 100%; }
+  .divider { flex: 1; min-width: 0; padding: 7px 4px; font-size: 0.98rem; }
 }
 
 /* ---------- Pages ---------- */
@@ -849,6 +853,38 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .board-me-row { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; background: var(--blue-soft); }
 .free-ch.teacher-ch { border-top-color: var(--blue); }
 .free-list.from-teacher { margin-bottom: 22px; }
+
+/* ---------- Confiance déclarée en fin de chapitre ---------- */
+.confiance { margin-top: 28px; padding: 20px 22px; background: var(--paper-2); border: 2px solid var(--ink); border-radius: var(--radius); box-shadow: var(--shadow); }
+.conf-q { font: 700 1.1rem/1.4 var(--font-title); margin: 0 0 14px; }
+.conf-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 10px; }
+.conf-btn { display: grid; gap: 2px; text-align: left; padding: 12px 14px; border: 2px solid var(--rule); border-radius: 10px; background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.conf-btn:hover { border-color: var(--blue); }
+.conf-btn strong { font: 700 1rem/1.2 var(--font-title); }
+.conf-btn.on { border-color: var(--blue); background: var(--blue-soft); box-shadow: 0 2px 0 var(--blue); }
+
+/* ---------- Révision flash ---------- */
+.flash { margin-bottom: 22px; padding: 18px 22px; background: color-mix(in srgb, var(--hl) 20%, var(--paper-2)); border: 2px solid var(--ink); border-radius: var(--radius); display: grid; gap: 14px; }
+.flash.reussi { background: var(--ok-soft); }
+.flash-head { display: grid; gap: 6px; }
+.flash-tag { justify-self: start; padding: 2px 10px; border-radius: 99px; background: var(--ink); color: var(--paper); font: 700 0.75rem/1.6 var(--font-body); text-transform: uppercase; letter-spacing: 0.04em; }
+.flash-q { margin: 0; font: 700 1.05rem/1.4 var(--font-title); }
+.flash-form { display: grid; gap: 12px; justify-items: start; }
+.flash-form .prompt { font-size: 1.1rem; }
+.flash-feedback:empty { display: none; }
+
+/* ---------- Tirage au sort ---------- */
+.tirage { display: grid; gap: 20px; justify-items: center; text-align: center; }
+.tirage-scene { min-height: 120px; display: grid; place-content: center; gap: 6px; width: 100%; padding: 24px; background: var(--paper-2); border: 2px dashed var(--rule); border-radius: var(--radius); }
+.tirage-nom { font: 750 clamp(1.8rem, 5vw, 2.8rem)/1.1 var(--font-title); margin: 0; }
+.tirage-nom.pop { animation: tirage-pop 0.4s ease-out; }
+@keyframes tirage-pop { 0% { transform: scale(0.8); opacity: 0.4; } 60% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.tirage-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 14px 20px; }
+.tirage-actions .field.inline { display: flex; align-items: center; gap: 8px; margin: 0; }
+.tirage-actions .field.inline input { width: 72px; }
+.tirage-etat { width: 100%; }
+.tirage-passes { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.tirage-passes li { padding: 3px 10px; border-radius: 99px; background: var(--paper); border: 1.5px solid var(--rule); font-size: 0.88rem; color: var(--muted); }
 
 /* ---------- Où ça coince ---------- */
 .th-link { display: block; color: inherit; text-decoration: none; }

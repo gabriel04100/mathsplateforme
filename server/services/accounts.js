@@ -242,6 +242,7 @@ function createAccountsService({ repos, auth }) {
         // Le détail des réponses part avec : remettre à zéro doit tout effacer,
         // sinon le diagnostic continuerait de compter d'anciennes erreurs.
         repos.questionResults.resetForUser(u.id);
+        repos.confidence.resetForUser(u.id);
       });
     },
 

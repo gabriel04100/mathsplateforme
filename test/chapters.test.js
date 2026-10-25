@@ -3,6 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
+const { unlockUpTo } = require('./helpers');
 
 let server;
 let base;
@@ -81,6 +82,7 @@ test('l’enseignant écrit un chapitre complet et le publie', async () => {
     title: 'Les nombres premiers',
     level: '3e',
     summary: 'Reconnaître un nombre premier.',
+    position: 1, // en tête du parcours : accessible sans rien terminer avant
     steps: COURSE_STEPS,
   });
   assert.equal(created.status, 201);
@@ -99,6 +101,8 @@ test('le cours est rendu en HTML sûr pour l’élève', async () => {
   });
 
   const eleve = await login(client(), 'nina', 'soleil42');
+  // Le parcours est séquentiel : on termine ce qui précède.
+  await unlockUpTo(eleve, '3e', chapterId);
   const data = (await eleve.get(`/chapters/${chapterId}`)).body;
   assert.equal(data.chapter.title, 'Les nombres premiers');
 

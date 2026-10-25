@@ -35,9 +35,20 @@ module.exports = function learningRoutes({ content, progress, exercises, chapter
     }
     const siblings = chapters.forUser(req.user, ch.level).filter((c) => c.status === 'published');
     const i = siblings.findIndex((c) => c.id === ch.id);
+    const etat = progress.chapterProgress(req.user, ch.id);
+
+    // Un chapitre encore verrouillé ne livre que sa table des matières :
+    // l'élève doit pouvoir lire « ce chapitre arrive après le précédent »
+    // sans que le cours et les exercices lui soient déjà servis.
+    const verrouille = req.user.role !== 'teacher' && etat && !etat.unlocked;
+    const contenu = verrouille
+      ? { ...ch, steps: ch.steps.map((s) => ({ id: s.id, type: s.type, title: s.title })) }
+      : ch;
+
     res.json({
-      chapter: ch,
-      progress: progress.chapterProgress(req.user, ch.id),
+      chapter: contenu,
+      progress: etat,
+      confiance: progress.confidenceFor(req.user, ch.id),
       prev: i > 0 ? { id: siblings[i - 1].id, title: siblings[i - 1].title } : null,
       next: i >= 0 && i < siblings.length - 1 ? { id: siblings[i + 1].id, title: siblings[i + 1].title } : null,
     });
@@ -54,6 +65,13 @@ module.exports = function learningRoutes({ content, progress, exercises, chapter
   r.get('/dashboard', (req, res) => {
     res.json(progress.dashboard(req.user));
   });
+
+  // Confiance déclarée par l'élève à la fin d'un chapitre.
+  r.post('/progress/confiance', (req, res) => res.json(progress.setConfidence(req.user, req.body || {})));
+
+  // Révision flash proposée à la connexion : deux questions au plus, et
+  // l'élève reste libre de décliner — c'est le client qui décide d'afficher.
+  r.get('/revision-flash', (req, res) => res.json({ revision: progress.revisionFlash(req.user) }));
 
   // Résumé commun aux chapitres des fichiers et à ceux de l'enseignant.
   function summarize(c) {

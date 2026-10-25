@@ -57,6 +57,7 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
   const isTeacher = state.user.role === 'teacher';
   const libre = mode === 'libre';
   const stepState = new Map(prog.steps.map((s) => [s.id, s]));
+  let confiance = data.confiance ?? null;
   let cleanupStep = null;
   markLevelTab(ch.level);
 
@@ -86,6 +87,7 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
           <ol class="steps" aria-label="Étapes du chapitre"></ol>
           <div class="step-pane" id="pane" tabindex="-1"></div>
         </div>
+        <div id="confiance-slot"></div>
       </section>`;
 
   const pane = el.querySelector('#pane');
@@ -113,13 +115,62 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
     });
   }
 
+  // Le chapitre est-il terminé ? On le demande à l'état local, mis à jour au fil des étapes.
+  const chapitreFini = () => ch.steps.every((s) => stepState.get(s.id)?.done);
+
+  // Dernière étape franchie : on demande à l'élève comment il se sent. Ni le
+  // score ni le temps ne disent s'il a compris — lui seul le sait.
+  function confianceHtml() {
+    if (state.user.role === 'teacher') return '';
+    const niveaux = [
+      [1, 'Perdu', 'Je n’ai pas compris'],
+      [2, 'Fragile', 'Je sais faire avec de l’aide'],
+      [3, 'Ça va', 'Je sais faire seul'],
+      [4, 'À l’aise', 'Je pourrais l’expliquer'],
+    ];
+    return `<div class="confiance" data-confiance>
+      <p class="conf-q">Chapitre terminé. Où en es-tu sur <strong>${esc(ch.title)}</strong> ?</p>
+      <div class="conf-choices">
+        ${niveaux
+          .map(
+            ([n, titre, aide]) =>
+              `<button type="button" class="conf-btn${confiance === n ? ' on' : ''}" data-niveau="${n}">
+                <strong>${titre}</strong><span class="muted small">${aide}</span></button>`
+          )
+          .join('')}
+      </div>
+      <p class="muted small">Ta réponse aide ton professeur à savoir quoi revoir. Tu peux la changer en revenant ici.</p>
+    </div>`;
+  }
+
+  function bindConfiance() {
+    const box = el.querySelector('[data-confiance]');
+    if (!box) return;
+    box.querySelectorAll('[data-niveau]').forEach(
+      (b) =>
+        (b.onclick = async () => {
+          const niveau = Number(b.dataset.niveau);
+          box.querySelectorAll('.conf-btn').forEach((x) => x.classList.toggle('on', x === b));
+          try {
+            await api.post('/progress/confiance', { chapterId: ch.id, level: niveau });
+            confiance = niveau;
+            toast('Merci, c’est noté.', 'success');
+          } catch (e) {
+            toast(e.message, 'error');
+          }
+        })
+    );
+  }
+
   function nextStepNav() {
     const i = ch.steps.indexOf(current);
     if (libre) return `<div class="pane-nav"><a class="btn ghost" href="/exercices" data-link>Retour aux exercices libres</a></div>`;
     const nxt = ch.steps[i + 1];
     if (nxt) return `<div class="pane-nav"><button type="button" class="btn" data-goto="${nxt.id}">Étape suivante : ${esc(nxt.title)}</button></div>`;
-    if (data.next) return `<div class="pane-nav"><a class="btn" href="/chapitre/${data.next.id}" data-link>Chapitre suivant : ${esc(data.next.title)}</a></div>`;
-    return `<div class="pane-nav"><a class="btn ghost" href="/niveau/${ch.level}" data-link>Retour au parcours de ${esc(ch.level)}</a></div>`;
+    const suite = data.next
+      ? `<a class="btn" href="/chapitre/${data.next.id}" data-link>Chapitre suivant : ${esc(data.next.title)}</a>`
+      : `<a class="btn ghost" href="/niveau/${ch.level}" data-link>Retour au parcours de ${esc(ch.level)}</a>`;
+    return `<div class="pane-nav">${suite}</div>`;
   }
 
   function bindNav() {
@@ -130,6 +181,16 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
     const st = stepState.get(stepId) || { id: stepId };
     stepState.set(stepId, { ...st, done: true, ...extra });
     drawSteps();
+    peindreConfiance();
+  }
+
+  // Le chapitre est fini : on demande son ressenti à l'élève. L'encart reste
+  // affiché tant qu'il est sur le chapitre, et il peut changer d'avis.
+  function peindreConfiance() {
+    const slot = el.querySelector('#confiance-slot');
+    if (!slot) return;
+    slot.innerHTML = chapitreFini() ? confianceHtml() : '';
+    bindConfiance();
   }
 
   function show(step, push) {
@@ -177,6 +238,7 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
   }
 
   show(current, false);
+  peindreConfiance();
   if (!libre && stepParam !== current.id) history.replaceState(null, '', `/chapitre/${ch.id}/${current.id}`);
 
   return () => {
