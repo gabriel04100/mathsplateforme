@@ -13,6 +13,7 @@ import { teacherChapterEditorView } from './views/chapter-editor.js';
 import { teacherParcoursView } from './views/parcours.js';
 import { teacherDiagnosticView } from './views/diagnostic.js';
 import { teacherFicheView } from './views/fiche.js';
+import { teacherDocumentsView } from './views/documents.js';
 import { customExerciseView } from './views/custom-exercise.js';
 import { gamesHomeView, gameView } from './views/games.js';
 
@@ -40,6 +41,7 @@ const routes = [
   { path: /^\/prof\/chapitres$/, view: teacherParcoursView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/parcours$/, view: teacherParcoursView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/fiche$/, view: teacherFicheView, nav: 'teacher', role: 'teacher' },
+  { path: /^\/prof\/documents$/, view: teacherDocumentsView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/chapitres\/nouveau$/, view: teacherChapterEditorView, nav: 'teacher', role: 'teacher' },
   // L'identifiant est soit le numéro d'un chapitre écrit ici, soit le nom d'un
   // chapitre livré dans content/ (ex. « 6e-fractions »).

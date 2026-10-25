@@ -54,7 +54,16 @@ function createChaptersService({ repos, content, exercises, shared }) {
   function renderSteps(steps) {
     return steps.map((s) => {
       if (s.type === 'lesson') {
-        return { ...s, blocks: (s.blocks || []).map((b) => ({ type: b.type, title: b.title || '', html: richtext.renderRichText(b.text) })) };
+        return {
+          ...s,
+          blocks: (s.blocks || []).map((b) =>
+            // Une vidéo n'a pas de texte à mettre en forme : on envoie son
+            // identifiant, le navigateur ne chargera YouTube que sur un clic.
+            richtext.isVideoBlock(b)
+              ? { type: 'video', title: b.title || '', videoId: richtext.parseYoutubeId(b.text) }
+              : { type: b.type, title: b.title || '', html: richtext.renderRichText(b.text) }
+          ),
+        };
       }
       if (s.type === 'exercise' && s.source === 'custom') {
         // Exercice écrit dans « Mes exercices » : on en recopie le modèle.
@@ -101,7 +110,14 @@ function createChaptersService({ repos, content, exercises, shared }) {
   function stepsForEditing(fileChapter) {
     return fileChapter.steps.map((s) => {
       if (s.type === 'lesson') {
-        return { ...s, blocks: (s.blocks || []).map((b) => ({ type: b.type, title: b.title || '', text: richtext.htmlToRichText(b.html || '') })) };
+        return {
+          ...s,
+          blocks: (s.blocks || []).map((b) =>
+            b.type === 'video'
+              ? { type: 'video', title: b.title || '', text: b.videoId || b.text || '' }
+              : { type: b.type, title: b.title || '', text: richtext.htmlToRichText(b.html || '') }
+          ),
+        };
       }
       if (s.type === 'exercise') return { ...s, source: 'generator' };
       return { ...s };

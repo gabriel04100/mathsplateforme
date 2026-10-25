@@ -867,6 +867,33 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .mi-given code { background: var(--ko-soft); color: var(--ko); font-weight: 700; }
 .mi-expected code { background: var(--ok-soft); color: var(--ok); font-weight: 700; }
 
+/* ---------- Vidéo d'un cours ---------- */
+/* Rien n'est demandé à YouTube tant que l'élève n'a pas cliqué. */
+.b-video { border-left-color: var(--ko); }
+.video-holder { margin-top: 6px; }
+.video-play {
+  display: flex; align-items: center; gap: 16px; width: 100%; text-align: left;
+  padding: 20px 22px; border: 2px dashed var(--rule); border-radius: 12px;
+  background: var(--paper); color: var(--ink); font: inherit; cursor: pointer;
+}
+.video-play:hover { border-color: var(--ko); border-style: solid; }
+.vp-icon { display: grid; place-items: center; width: 52px; height: 52px; flex: none; border-radius: 50%; background: var(--ko); color: #fff; font-size: 1.3rem; }
+.vp-text { display: grid; gap: 2px; }
+.video-frame { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: #000; }
+.video-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video-url { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 0.9rem; }
+
+/* ---------- Documents à télécharger ---------- */
+.docs-layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: start; }
+@media (max-width: 900px) { .docs-layout { grid-template-columns: 1fr; } }
+.doc-block { margin-top: 28px; }
+.doc-list { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
+.doc-item { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: var(--paper-2); border: 2px solid var(--rule); border-radius: 12px; color: var(--ink); text-decoration: none; }
+.doc-item:hover { border-color: var(--blue); }
+.doc-ico { flex: none; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 9px; background: var(--ko-soft); color: var(--ko); font: 750 0.72rem/1 var(--font-title); }
+.doc-body { display: grid; gap: 1px; flex: 1; min-width: 0; }
+.doc-go { font-size: 1.2rem; color: var(--blue); }
+
 /* ---------- Fiche d'exercices à imprimer ---------- */
 .fiche-layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 28px; align-items: start; }
 @media (max-width: 900px) { .fiche-layout { grid-template-columns: 1fr; } }

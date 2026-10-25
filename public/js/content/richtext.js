@@ -145,6 +145,32 @@ export function htmlToRichText(html) {
     .trim();
 }
 
+// Identifiant d'une vidéo YouTube, à partir d'un lien collé ou de l'identifiant
+// seul. Renvoie null si ce n'en est pas une : on n'intègre que ce qu'on reconnaît.
+export function parseYoutubeId(input) {
+  const s = String(input ?? '').trim();
+  if (!s) return null;
+  if (/^[\w-]{11}$/.test(s)) return s;
+  let url;
+  try {
+    url = new URL(s.startsWith('http') ? s : `https://${s}`);
+  } catch {
+    return null;
+  }
+  const host = url.hostname.replace(/^www\./, '');
+  if (host === 'youtu.be') {
+    const id = url.pathname.slice(1);
+    return /^[\w-]{11}$/.test(id) ? id : null;
+  }
+  if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+    const v = url.searchParams.get('v');
+    if (v && /^[\w-]{11}$/.test(v)) return v;
+    const m = /^\/(?:embed|shorts|live)\/([\w-]{11})/.exec(url.pathname);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 // Blocs de cours proposés dans l'éditeur. L'ordre est celui du sélecteur.
 export const BLOCK_TYPES = [
   { id: 'definition', label: 'Définition', hint: 'Ce qu’il faut retenir par cœur', placeholder: 'Un nombre premier est un entier qui a exactement deux diviseurs : $1$ et lui-même.' },
@@ -153,7 +179,17 @@ export const BLOCK_TYPES = [
   { id: 'example', label: 'Exemple', hint: 'Un cas traité en entier', placeholder: '$3 + 4 \\times 2 = 3 + 8 = 11$' },
   { id: 'remark', label: 'Remarque', hint: 'Une mise en garde, un piège courant', placeholder: 'Attention : $3 + 4 \\times 2$ ne vaut pas $14$.' },
   { id: 'text', label: 'Texte simple', hint: 'Un paragraphe sans étiquette', placeholder: 'On a vu au chapitre précédent que…' },
+  {
+    id: 'video',
+    label: 'Vidéo',
+    hint: 'Une vidéo YouTube, chargée seulement si l’élève clique',
+    placeholder: 'https://www.youtube.com/watch?v=...',
+  },
 ];
+
+// Les blocs vidéo ne contiennent pas du texte mais un identifiant : ils sont
+// rendus à part, et ne passent jamais par la mise en forme.
+export const isVideoBlock = (b) => b?.type === 'video';
 
 export const BLOCK_IDS = BLOCK_TYPES.map((b) => b.id);
 
@@ -165,6 +201,13 @@ export function validateBlock(block, where) {
   const title = String(block.title ?? '');
   if (title.length > 120) errors.push(`${where} : titre trop long (120 caractères maximum).`);
   const text = String(block.text ?? '');
+
+  if (isVideoBlock(block)) {
+    if (!text.trim()) errors.push(`${where} : colle le lien de la vidéo YouTube.`);
+    else if (!parseYoutubeId(text)) errors.push(`${where} : « ${text.slice(0, 60)} » n’est pas un lien YouTube reconnu.`);
+    return errors;
+  }
+
   if (!text.trim()) errors.push(`${where} : le contenu est vide.`);
   if (text.length > MAX_BLOCK_TEXT) errors.push(`${where} : texte trop long (${MAX_BLOCK_TEXT} caractères maximum).`);
   return errors;

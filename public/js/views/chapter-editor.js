@@ -4,7 +4,7 @@
 import { api } from '../api.js';
 import { navigate } from '../app.js';
 import { esc, renderMath, relativeTime, toast } from '../ui.js';
-import { renderRichText, BLOCK_TYPES } from '../content/richtext.js';
+import { renderRichText, BLOCK_TYPES, parseYoutubeId } from '../content/richtext.js';
 
 const LEVELS = ['6e', '5e', '4e', '3e'];
 const BLOCK_LABEL = Object.fromEntries(BLOCK_TYPES.map((b) => [b.id, b.label]));
@@ -274,7 +274,12 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
                 <button type="button" class="rowdel" data-bdel="${i}" title="Supprimer le bloc">✕</button>
               </span>
             </div>
-            <textarea data-btext="${i}" rows="4" placeholder="${esc(BLOCK_TYPES.find((t) => t.id === b.type)?.placeholder || '')}">${esc(b.text || '')}</textarea>
+            ${
+              b.type === 'video'
+                ? `<input data-btext="${i}" class="video-url" placeholder="${esc(BLOCK_TYPES.find((t) => t.id === 'video').placeholder)}" value="${esc(b.text || '')}">
+                   <p class="muted small">Colle le lien de la vidéo. Elle ne sera chargée que si l’élève clique dessus : aucune donnée ne part chez YouTube avant.</p>`
+                : `<textarea data-btext="${i}" rows="4" placeholder="${esc(BLOCK_TYPES.find((t) => t.id === b.type)?.placeholder || '')}">${esc(b.text || '')}</textarea>`
+            }
           </div>`
         )
         .join('');
@@ -318,6 +323,13 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
       const prev = body.querySelector('[data-preview]');
       prev.innerHTML = step.blocks
         .map((b) => {
+          if (b.type === 'video') {
+            const id = parseYoutubeId(b.text);
+            return `<section class="block b-video">${b.title ? `<h3>${esc(b.title)}</h3>` : ''}
+              <p class="muted small">${
+                id ? `Vidéo <code>${esc(id)}</code> — l’élève verra un bouton à cliquer.` : 'Lien YouTube non reconnu pour l’instant.'
+              }</p></section>`;
+          }
           const label = BLOCK_LABEL[b.type];
           const head =
             b.type === 'text' && !b.title

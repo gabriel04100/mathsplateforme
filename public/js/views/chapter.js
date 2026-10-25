@@ -6,11 +6,52 @@ import { esc, renderMath, STEP_KIND, stepIcon, toast } from '../ui.js';
 import { WIDGETS } from '../animations/widgets.js';
 import { generateSet, expectedText } from '../exercises/generators.js';
 import { generateFromTemplate } from '../exercises/template.js';
+import { documentsListHtml } from './documents.js';
 
-const BLOCK_LABEL = { definition: 'Définition', property: 'Propriété', method: 'Méthode', example: 'Exemple', remark: 'Remarque', text: '' };
+const BLOCK_LABEL = { definition: 'Définition', property: 'Propriété', method: 'Méthode', example: 'Exemple', remark: 'Remarque', text: '', video: '' };
+
+// Un bloc de cours. Les vidéos sont un cas à part : rien n'est demandé à
+// YouTube tant que l'élève n'a pas cliqué, pour qu'ouvrir un cours ne le fasse
+// pas pister sans qu'il l'ait voulu.
+function blockHtml(b) {
+  if (b.type === 'video') {
+    if (!b.videoId) return '';
+    return `<section class="block b-video">
+      ${b.title ? `<h3>${esc(b.title)}</h3>` : ''}
+      <div class="video-holder" data-video="${esc(b.videoId)}">
+        <button type="button" class="video-play">
+          <span class="vp-icon" aria-hidden="true">▶</span>
+          <span class="vp-text"><strong>Regarder la vidéo</strong>
+            <span class="muted small">Elle est hébergée par YouTube : en cliquant, tu acceptes que leur site soit contacté.</span></span>
+        </button>
+      </div>
+    </section>`;
+  }
+  const label = BLOCK_LABEL[b.type];
+  const head = label || b.title ? `<h3>${label ? `<span class="block-kind">${label}</span>` : ''}${b.title ? esc(b.title) : ''}</h3>` : '';
+  return `<section class="block b-${b.type}">${head}<div class="block-body">${b.html}</div></section>`;
+}
+
+// Le clic remplace la vignette par le lecteur, en mode sans cookie.
+function bindVideos(root) {
+  root.querySelectorAll('.video-holder').forEach((holder) => {
+    holder.querySelector('.video-play').onclick = () => {
+      const id = holder.dataset.video;
+      holder.innerHTML = `<div class="video-frame"><iframe
+        src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}?rel=0&autoplay=1"
+        title="Vidéo du cours" loading="lazy" allow="autoplay; fullscreen; picture-in-picture"
+        referrerpolicy="no-referrer" allowfullscreen></iframe></div>`;
+    };
+  });
+}
 
 export async function chapterView({ el, params: [chapterId, stepParam], mode = 'parcours' }) {
-  const data = await api.get(`/chapters/${chapterId}`);
+  const [data, docs] = await Promise.all([
+    api.get(`/chapters/${chapterId}`),
+    // Les documents déposés pour ce chapitre. Leur absence ne doit jamais
+    // empêcher le cours de s'afficher.
+    api.get(`/documents?chapitre=${encodeURIComponent(chapterId)}`).then((r) => r.documents).catch(() => []),
+  ]);
   const ch = data.chapter;
   const prog = data.progress;
   const isTeacher = state.user.role === 'teacher';
@@ -103,10 +144,13 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
     if (step.type !== 'exercise') markDone(step.id);
 
     if (step.type === 'lesson') {
+      // Les documents du chapitre accompagnent le cours : c'est là que l'élève
+      // les cherche, pas dans un onglet à part.
       pane.innerHTML = `<article class="lesson"><h2>${esc(step.title)}</h2>${step.blocks
-        .map((b) => `<section class="block b-${b.type}">${BLOCK_LABEL[b.type] || b.title ? `<h3>${BLOCK_LABEL[b.type] ? `<span class="block-kind">${BLOCK_LABEL[b.type]}</span>` : ''}${b.title ? esc(b.title) : ''}</h3>` : ''}<div class="block-body">${b.html}</div></section>`)
-        .join('')}</article>${nextStepNav()}`;
+        .map(blockHtml)
+        .join('')}${documentsListHtml(docs)}</article>${nextStepNav()}`;
       renderMath(pane);
+      bindVideos(pane);
     } else if (step.type === 'animation') {
       pane.innerHTML = `<article class="anim"><h2>${esc(step.title)}</h2>${step.intro ? `<p class="intro">${step.intro}</p>` : ''}<div class="anim-stage"></div></article>${nextStepNav()}`;
       renderMath(pane.querySelector('.intro'));

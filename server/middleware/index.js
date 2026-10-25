@@ -17,9 +17,15 @@ function parseCookies(header) {
 }
 
 function securityHeaders(req, res, next) {
+  // Tout vient du site, à une exception près : les vidéos YouTube intégrées
+  // dans un cours. Elles sont chargées depuis youtube-nocookie.com, et
+  // seulement si l'élève clique sur la vignette — aucune requête n'est faite
+  // à Google tant qu'il ne l'a pas décidé (voir la note RGPD du README).
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; " +
+      "font-src 'self' data:; script-src 'self'; frame-src https://www.youtube-nocookie.com; " +
+      "frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
   );
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'same-origin');
