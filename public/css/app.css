@@ -1051,12 +1051,14 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .dec-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .dec-score { font: 800 1.1rem/1 var(--font-title); color: var(--ink); }
 .dec-streak { font-weight: 700; color: var(--lv-4e); }
-.dec-zone { fill: transparent; cursor: pointer; }
-.dec-zone:hover, .dec-zone:focus { fill: var(--blue-soft); outline: none; }
-.dec-zone.juste { fill: color-mix(in srgb, var(--ok) 26%, transparent); }
-.dec-zone.faux { fill: color-mix(in srgb, var(--ko) 24%, transparent); }
-.dec-cible { fill: transparent; stroke: var(--rule); stroke-width: 2; cursor: pointer; }
-.dec-cible:hover, .dec-cible:focus { fill: var(--blue-soft); stroke: var(--blue); outline: none; }
+/* La réponse s'écrit, elle ne se clique pas : deux cases autour du nombre pour
+   un encadrement, une seule pour un arrondi ou un intercalage. */
+.dec-form { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; }
+.dec-champs { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 1.1rem; }
+.dec-champs input { font: 700 1.15rem/1 var(--font-title); text-align: center; padding: 10px 8px; width: 7ch; }
+.dec-champs input:disabled { opacity: 1; border-color: var(--ok); background: var(--ok-soft); }
+.dec-champs label:not(.sr) { font-weight: 700; }
+.dec-cmp { font: 700 1.2rem/1 var(--font-title); color: var(--muted); }
 .dec-milieu { stroke: var(--ko); stroke-width: 2; stroke-dasharray: 5 5; }
 .dec-bille { pointer-events: none; }
 .dec-bille.pose { fill: var(--ok); }

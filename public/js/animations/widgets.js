@@ -3,7 +3,7 @@
 // Pour en ajouter une : écrire la fonction et l'enregistrer dans WIDGETS (le nom est celui du JSON).
 import { stepsLatex } from '../math/expr.js';
 import { mesurerAngle, construireAngle } from './angles.js';
-import { encadrerDecimal, arrondirDecimal, intercalerDecimal, defiDecimaux } from './decimaux.js';
+import { encadrerUnite, encadrerDixieme, arrondirUnite, arrondirDixieme, intercalerUnite, intercalerDixieme, defiDecimaux } from './decimaux.js';
 
 const fr = (x, d = 2) => String(+x.toFixed(d)).replace('.', ',');
 const h = (html) => {
@@ -405,9 +405,12 @@ function affineGraph(el, { a = 1, b = 2 }, { math }) {
 
 export const WIDGETS = {
   'number-line-zoom': numberLineZoom,
-  'encadrer-decimal': encadrerDecimal,
-  'arrondir-decimal': arrondirDecimal,
-  'intercaler-decimal': intercalerDecimal,
+  'encadrer-unite': encadrerUnite,
+  'encadrer-dixieme': encadrerDixieme,
+  'intercaler-unite': intercalerUnite,
+  'intercaler-dixieme': intercalerDixieme,
+  'arrondir-unite': arrondirUnite,
+  'arrondir-dixieme': arrondirDixieme,
   'defi-decimaux': defiDecimaux,
   'mesurer-angle': mesurerAngle,
   'construire-angle': construireAngle,
@@ -429,25 +432,40 @@ export const WIDGET_INFO = {
     level: '6e',
     hint: 'L’élève zoome entre deux graduations pour placer un nombre décimal au bon endroit.',
   },
-  'encadrer-decimal': {
-    label: 'Encadrer un décimal (jeu)',
+  'encadrer-unite': {
+    label: 'Encadrer par deux entiers (jeu)',
     level: '6e',
-    hint: 'La droite est graduée au rang demandé ; l’élève clique sur le segment qui contient le nombre. Encadrer, ce n’est pas arrondir.',
+    hint: 'L’élève écrit les deux entiers voisins de part et d’autre du nombre, comme dans son cahier. Encadrer, ce n’est pas arrondir.',
   },
-  'arrondir-decimal': {
-    label: 'Arrondir un décimal (jeu)',
+  'encadrer-dixieme': {
+    label: 'Encadrer par deux dixièmes (jeu)',
     level: '6e',
-    hint: 'Le milieu entre les deux graduations est tracé. L’élève choisit la plus proche et la bille roule jusqu’à elle.',
+    hint: 'Même geste au rang du dixième. À donner après « Encadrer par deux entiers ».',
   },
-  'intercaler-decimal': {
-    label: 'Intercaler un décimal (jeu)',
+  'intercaler-unite': {
+    label: 'Intercaler entre deux entiers (jeu)',
     level: '6e',
-    hint: 'On zoome entre deux décimaux voisins : l’élève y place un nombre et découvre qu’il reste toujours de la place.',
+    hint: 'La droite est zoomée entre deux entiers voisins : l’élève écrit un nombre qui tient entre les deux.',
+  },
+  'intercaler-dixieme': {
+    label: 'Intercaler entre deux dixièmes (jeu)',
+    level: '6e',
+    hint: 'Même geste au rang du dixième : on découvre qu’il reste toujours de la place.',
+  },
+  'arrondir-unite': {
+    label: 'Arrondir à l’unité (jeu)',
+    level: '6e',
+    hint: 'Le milieu entre les deux entiers voisins est tracé. L’élève écrit l’arrondi et la bille roule jusqu’à lui.',
+  },
+  'arrondir-dixieme': {
+    label: 'Arrondir au dixième (jeu)',
+    level: '6e',
+    hint: 'Même geste au rang du dixième. Le piège de la troncature est nommé quand l’élève y tombe.',
   },
   'defi-decimaux': {
     label: 'Défi décimaux : encadrer, arrondir, intercaler',
     level: '6e',
-    hint: 'Dix questions mélangées, avec points et bonus de série. À donner après les trois jeux précédents.',
+    hint: 'Dix questions mélangées sur les deux rangs, avec points et bonus de série. À donner après les six jeux précédents.',
   },
   'mesurer-angle': {
     label: 'Mesurer un angle au rapporteur',

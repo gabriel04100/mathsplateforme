@@ -61,27 +61,6 @@
       }
     },
     {
-      "id": "anim-encadrer",
-      "type": "animation",
-      "title": "Jeu : encadrer un décimal",
-      "intro": "La droite est graduée au rang demandé. Clique sur le segment qui contient le nombre — pas sur une graduation : encadrer, c'est désigner un intervalle.",
-      "widget": "encadrer-decimal"
-    },
-    {
-      "id": "anim-intercaler",
-      "type": "animation",
-      "title": "Jeu : intercaler un décimal",
-      "intro": "On a zoomé entre deux voisins : il y a dix fois plus de graduations. Place un nombre strictement entre les deux, et recommence — il reste toujours de la place.",
-      "widget": "intercaler-decimal"
-    },
-    {
-      "id": "anim-arrondir",
-      "type": "animation",
-      "title": "Jeu : arrondir un décimal",
-      "intro": "Le milieu entre les deux graduations est tracé en pointillés. Choisis la graduation la plus proche : la bille roule jusqu'à elle si tu as raison.",
-      "widget": "arrondir-decimal"
-    },
-    {
       "id": "ex-chiffres",
       "type": "exercise",
       "title": "Rang des chiffres",
@@ -100,29 +79,98 @@
       "pass": 6
     },
     {
-      "id": "ex-encadrer",
+      "id": "anim-encadrer-u",
+      "type": "animation",
+      "title": "Jeu : encadrer par deux entiers",
+      "intro": "Le nombre est posé sur la droite graduée. Écris les deux entiers voisins, le plus petit à gauche — exactement comme dans ton cahier.",
+      "widget": "encadrer-unite"
+    },
+    {
+      "id": "ex-encadrer-u",
       "type": "exercise",
-      "title": "Encadrer",
-      "instructions": "Donne les deux voisins au rang demandé. Attention : on ne cherche pas le plus proche.",
-      "generator": "dec-encadrer",
+      "title": "Encadrer par deux entiers",
+      "instructions": "Écris l'encadrement en entier. On ne cherche pas le plus proche : on donne les deux voisins.",
+      "generator": "dec-encadrer-unite",
       "count": 5,
       "pass": 4
     },
     {
-      "id": "ex-intercaler",
+      "id": "anim-encadrer-d",
+      "type": "animation",
+      "title": "Jeu : encadrer par deux dixièmes",
+      "intro": "Même geste, un rang plus loin : la droite est maintenant graduée de dixième en dixième.",
+      "widget": "encadrer-dixieme"
+    },
+    {
+      "id": "ex-encadrer-d",
       "type": "exercise",
-      "title": "Intercaler",
+      "title": "Encadrer par deux dixièmes",
+      "instructions": "Même consigne qu'avant, au rang du dixième.",
+      "generator": "dec-encadrer-dixieme",
+      "count": 5,
+      "pass": 4
+    },
+    {
+      "id": "anim-intercaler-u",
+      "type": "animation",
+      "title": "Jeu : intercaler entre deux entiers",
+      "intro": "On a zoomé entre deux entiers voisins : écris un nombre qui tient entre les deux.",
+      "widget": "intercaler-unite"
+    },
+    {
+      "id": "ex-intercaler-u",
+      "type": "exercise",
+      "title": "Intercaler entre deux entiers",
       "instructions": "Trouve un nombre strictement compris entre les deux. Plusieurs réponses sont justes.",
-      "generator": "dec-intercaler",
+      "generator": "dec-intercaler-unite",
       "count": 5,
       "pass": 4
     },
     {
-      "id": "ex-arrondir",
+      "id": "anim-intercaler-d",
+      "type": "animation",
+      "title": "Jeu : intercaler entre deux dixièmes",
+      "intro": "Même geste entre deux dixièmes voisins. On peut recommencer indéfiniment : il reste toujours de la place.",
+      "widget": "intercaler-dixieme"
+    },
+    {
+      "id": "ex-intercaler-d",
       "type": "exercise",
-      "title": "Arrondir",
+      "title": "Intercaler entre deux dixièmes",
+      "instructions": "Même consigne qu'avant, au rang du dixième.",
+      "generator": "dec-intercaler-dixieme",
+      "count": 5,
+      "pass": 4
+    },
+    {
+      "id": "anim-arrondir-u",
+      "type": "animation",
+      "title": "Jeu : arrondir à l'unité",
+      "intro": "Le milieu entre les deux entiers voisins est tracé en pointillés. Écris l'entier le plus proche : la bille roule jusqu'à lui.",
+      "widget": "arrondir-unite"
+    },
+    {
+      "id": "ex-arrondir-u",
+      "type": "exercise",
+      "title": "Arrondir à l'unité",
       "instructions": "Encadre d'abord, puis regarde de quel côté du milieu se trouve le nombre.",
-      "generator": "dec-arrondir",
+      "generator": "dec-arrondir-unite",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "anim-arrondir-d",
+      "type": "animation",
+      "title": "Jeu : arrondir au dixième",
+      "intro": "Même geste au rang du dixième. Attention au piège : arrondir, ce n'est pas effacer les chiffres qui dépassent.",
+      "widget": "arrondir-dixieme"
+    },
+    {
+      "id": "ex-arrondir-d",
+      "type": "exercise",
+      "title": "Arrondir au dixième",
+      "instructions": "Même consigne qu'avant, au rang du dixième.",
+      "generator": "dec-arrondir-dixieme",
       "count": 6,
       "pass": 5
     },
@@ -130,7 +178,7 @@
       "id": "anim-defi",
       "type": "animation",
       "title": "Défi : les trois gestes mélangés",
-      "intro": "Dix questions tirées au sort parmi les trois jeux. Trois bonnes réponses d'affilée : bonus de points.",
+      "intro": "Dix questions tirées au sort parmi les six jeux précédents. Trois bonnes réponses d'affilée : bonus de points.",
       "widget": "defi-decimaux"
     }
   ]

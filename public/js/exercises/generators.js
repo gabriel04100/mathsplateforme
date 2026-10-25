@@ -15,16 +15,6 @@ export const rand = (a, b) => a + Math.floor(random() * (b - a + 1));
 const pick = (arr) => arr[Math.floor(random() * arr.length)];
 const sign = () => (random() < 0.5 ? -1 : 1);
 const nz = (a, b) => { let v = 0; while (v === 0) v = rand(a, b); return v; };
-// Mélange (Fisher-Yates) tiré de `random()`, comme tout le reste : une graine
-// donnée doit redonner exactement la même question, options comprises.
-function shuffle(arr) {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 // Nombre → LaTeX à la française (virgule décimale).
 export const tex = (x) => String(+x.toFixed(10)).replace('.', '{,}');
@@ -565,12 +555,20 @@ function affCoeff() {
 // éviter : encadrer n'est pas arrondir (on ne choisit pas le plus proche, on
 // donne les deux voisins), arrondir n'est pas tronquer, et entre deux décimaux
 // il y a toujours de la place.
+//
+// Un générateur par rang — l'unité et le dixième — plutôt qu'un seul qui tire
+// le rang au sort : ce sont deux exercices distincts, qu'on donne à deux
+// moments différents, et l'enseignant doit pouvoir choisir lequel. On s'arrête
+// au dixième : le centième n'ajoute aucune idée nouvelle à ce stade, seulement
+// de la difficulté de lecture.
 
-const RANGS = [
-  { nom: "à l'unité", adj: 'entiers', dec: 0, pas: 'une unité' },
-  { nom: 'au dixième', adj: 'dixièmes', dec: 1, pas: 'un dixième' },
-  { nom: 'au centième', adj: 'centièmes', dec: 2, pas: 'un centième' },
-];
+const RANGS = {
+  // `exemple` montre la forme attendue d'un encadrement. Il porte volontairement
+  // sur un AUTRE nombre que celui de la question : sinon l'exemple donnerait la
+  // réponse.
+  0: { nom: "à l'unité", pluriel: 'entiers', pas: 'une unité', exemple: '7 &lt; 7,38 &lt; 8' },
+  1: { nom: 'au dixième', pluriel: 'dixièmes', pas: 'un dixième', exemple: '7,3 &lt; 7,38 &lt; 7,4' },
+};
 
 // Un décimal tiré au sort avec exactement `dec + 2` chiffres après la virgule,
 // le dernier non nul. Deux chiffres de rab : la décision ne tombe jamais pile
@@ -579,89 +577,104 @@ function decimalPour(dec) {
   const chiffres = [];
   for (let i = 0; i < dec + 2; i++) chiffres.push(rand(0, 9));
   if (chiffres[chiffres.length - 1] === 0) chiffres[chiffres.length - 1] = rand(1, 9);
-  const entier = rand(1, 9) * (dec === 0 ? rand(1, 9) : 1); // des unités, parfois des dizaines
-  const valeur = Number(`${entier}.${chiffres.join('')}`);
-  return { valeur, entier, chiffres };
+  const entier = dec === 0 ? rand(1, 9) * rand(1, 9) : rand(1, 9); // des unités, parfois des dizaines
+  return Number(`${entier}.${chiffres.join('')}`);
 }
 
 const puis = (n) => 10 ** n;
 // Arrondi et troncature calculés sur des entiers : pas de surprise flottante.
 const tronque = (x, dec) => Math.floor(Math.round(x * puis(dec + 3)) / puis(3)) / puis(dec);
 const arrondi = (x, dec) => Math.round(Math.round(x * puis(dec + 3)) / puis(3)) / puis(dec);
+// Écriture française en clair (pas du LaTeX) : sert aux réponses attendues.
+const fr = (x, dec) => x.toFixed(dec).replace('.', ',');
 
-function decEncadrer() {
-  const rang = pick(RANGS);
-  const { valeur } = decimalPour(rang.dec);
-  const bas = tronque(valeur, rang.dec);
-  const haut = +(bas + 1 / puis(rang.dec)).toFixed(rang.dec);
-  const pas = 1 / puis(rang.dec);
-  const cadre = (a, b) => `$${tex(a)} < ${tex(valeur)} < ${tex(b)}$`;
+// Lit l'encadrement écrit par l'élève. On accepte ce qu'il écrirait dans son
+// cahier — « 7 < 7,38 < 8 » — mais aussi les deux bornes seules, séparées par
+// ce qu'il veut sauf une virgule (qui est le séparateur décimal).
+function lireEncadrement(brut, milieu) {
+  const texte = String(brut).replace(/\s+/g, ' ').trim();
+  if (!texte) return null;
+  const nombres = (texte.match(/\d+(?:[.,]\d+)?/g) || []).map((n) => Number(n.replace(',', '.')));
+  if (nombres.length === 3) {
+    return Math.abs(nombres[1] - milieu) < 1e-9 ? [nombres[0], nombres[2]] : null;
+  }
+  return nombres.length === 2 ? [nombres[0], nombres[1]] : null;
+}
 
-  // Les pièges, dans l'ordre : un encadrement décalé d'un cran (il ne contient
-  // pas le nombre), un encadrement au rang du dessus (trop large) et un au rang
-  // du dessous (vrai, mais ce ne sont pas les voisins demandés — c'est l'erreur
-  // de lecture de la consigne).
-  const voisins = (d) => {
-    const b = tronque(valeur, d);
-    return cadre(b, +(b + 1 / puis(d)).toFixed(d));
-  };
-  const options = [
-    cadre(bas, haut),
-    cadre(+(bas + pas).toFixed(rang.dec), +(haut + pas).toFixed(rang.dec)),
-    voisins(Math.max(0, rang.dec - 1)),
-    voisins(rang.dec + 1),
-  ];
-  // On ne garde qu'une fois chaque proposition : au rang de l'unité, « le rang
-  // du dessus » est le même que la bonne réponse.
-  const uniques = options.filter((o, i) => options.indexOf(o) === i);
-  const melange = shuffle(uniques);
-  return {
-    prompt: `Encadre $${tex(valeur)}$ par deux ${rang.adj} consécutifs.`,
-    input: { kind: 'choice', options: melange },
-    check: choiceCheck(melange.indexOf(options[0])),
-    solution: `On garde les chiffres jusqu'au rang demandé : $${tex(bas)}$. Le voisin suivant est $${tex(bas)} + ${tex(pas)} = ${tex(haut)}$.<br>
-      Donc $${tex(bas)} < ${tex(valeur)} < ${tex(haut)}$. Attention : encadrer, ce n'est pas arrondir — on ne cherche pas le plus proche, mais les <strong>deux voisins</strong>.`,
+function faireEncadrer(dec) {
+  const rang = RANGS[dec];
+  return function encadrer() {
+    const valeur = decimalPour(dec);
+    const bas = tronque(valeur, dec);
+    const haut = +(bas + 1 / puis(dec)).toFixed(dec);
+    const attendu = `${fr(bas, dec)} < ${fr(valeur, dec + 2)} < ${fr(haut, dec)}`;
+    return {
+      prompt: `Encadre $${tex(valeur)}$ par deux ${rang.pluriel} consécutifs.<br><span class="muted small">Écris l'encadrement en entier, sur le modèle « ${rang.exemple} ».</span>`,
+      input: { kind: 'text' },
+      check: withExpected((ans) => {
+        const bornes = lireEncadrement(ans, valeur);
+        if (!bornes) return { ok: false, message: `Écris les deux nombres qui encadrent, sur le modèle « ${rang.exemple.replace(/&lt;/g, '<')} ».` };
+        const [g, d] = bornes;
+        if (g === haut && d === bas) return { ok: false, message: 'Les deux nombres sont les bons, mais dans le mauvais sens : le plus petit à gauche.' };
+        if (g > valeur || d < valeur) return { ok: false, message: `Ton encadrement ne contient pas $${tex(valeur)}$.` };
+        if (g !== bas || d !== haut) return { ok: false, message: `Ce ne sont pas deux ${rang.pluriel} consécutifs : il faut ${rang.pas} d'écart.` };
+        return { ok: true };
+      }, attendu),
+      solution: `On garde les chiffres jusqu'au rang demandé : $${tex(bas)}$. Le voisin suivant est $${tex(bas)} + ${tex(1 / puis(dec))} = ${tex(haut)}$.<br>
+        Donc $${tex(bas)} < ${tex(valeur)} < ${tex(haut)}$. Attention : encadrer, ce n'est pas arrondir — on ne cherche pas le plus proche, mais les <strong>deux voisins</strong>.`,
+    };
   };
 }
 
-function decIntercaler() {
-  const rang = pick(RANGS.slice(0, 2)); // à l'unité ou au dixième : il reste de la place à voir
-  const bas = rang.dec === 0 ? rand(1, 20) : +(rand(10, 90) / 10).toFixed(1);
-  const haut = +(bas + 1 / puis(rang.dec)).toFixed(rang.dec);
-  const milieu = +((bas + haut) / 2).toFixed(rang.dec + 1);
-  return {
-    prompt: `Donne un nombre décimal strictement compris entre $${tex(bas)}$ et $${tex(haut)}$.`,
-    input: { kind: 'number' },
-    // Toute réponse dans l'intervalle ouvert convient : c'est bien le propos.
-    // `expected` retient le milieu, qui sert de réponse type dans les corrigés.
-    check: withExpected((ans) => {
-      const v = parseNumber(ans);
-      if (v === null) return { ok: false, message: 'Écris un nombre (avec une virgule si besoin).' };
-      if (v <= bas || v >= haut) return { ok: false, message: `Il faut être strictement entre $${tex(bas)}$ et $${tex(haut)}$.` };
-      return { ok: true };
-    }, milieu),
-    solution: `Il suffit d'ajouter un chiffre après la virgule : $${tex(milieu)}$ convient, et $${tex(bas)} < ${tex(milieu)} < ${tex(haut)}$.<br>
-      Entre deux décimaux, il y a toujours de la place — et même une infinité de nombres.`,
+function faireIntercaler(dec) {
+  const rang = RANGS[dec];
+  return function intercaler() {
+    const bas = dec === 0 ? rand(1, 20) : +(rand(10, 90) / 10).toFixed(1);
+    const haut = +(bas + 1 / puis(dec)).toFixed(dec);
+    const milieu = +((bas + haut) / 2).toFixed(dec + 1);
+    return {
+      prompt: `Donne un nombre décimal strictement compris entre $${tex(bas)}$ et $${tex(haut)}$.`,
+      input: { kind: 'number' },
+      // Toute réponse dans l'intervalle ouvert convient : c'est bien le propos.
+      // `expected` retient le milieu, qui sert de réponse type dans les corrigés.
+      check: withExpected((ans) => {
+        const v = parseNumber(ans);
+        if (v === null) return { ok: false, message: 'Écris un nombre (avec une virgule si besoin).' };
+        if (v === bas || v === haut) return { ok: false, message: 'C\'est une des deux bornes : « strictement entre » veut dire qu\'on ne les prend pas.' };
+        if (v < bas || v > haut) return { ok: false, message: `Il faut être entre $${tex(bas)}$ et $${tex(haut)}$.` };
+        return { ok: true };
+      }, milieu),
+      solution: `Il suffit d'ajouter un chiffre après la virgule : $${tex(milieu)}$ convient, et $${tex(bas)} < ${tex(milieu)} < ${tex(haut)}$.<br>
+        Entre deux ${rang.pluriel} voisins, il y a toujours de la place — et même une infinité de nombres.`,
+    };
   };
 }
 
-function decArrondir() {
-  const rang = pick(RANGS);
-  const { valeur } = decimalPour(rang.dec);
-  const bas = tronque(valeur, rang.dec);
-  const pas = 1 / puis(rang.dec);
-  const haut = +(bas + pas).toFixed(rang.dec);
-  const reponse = arrondi(valeur, rang.dec);
-  const milieu = +((bas + haut) / 2).toFixed(rang.dec + 1);
-  return {
-    prompt: `Arrondis $${tex(valeur)}$ ${rang.nom}.`,
-    input: { kind: 'number' },
-    check: numberCheck(reponse),
-    solution: `On encadre d'abord : $${tex(bas)} < ${tex(valeur)} < ${tex(haut)}$. Le milieu est $${tex(milieu)}$.<br>
-      Comme $${tex(valeur)}$ est ${valeur < milieu ? 'avant' : 'après'} le milieu, le plus proche est $${tex(reponse)}$.`,
+function faireArrondir(dec) {
+  const rang = RANGS[dec];
+  return function arrondirGen() {
+    const valeur = decimalPour(dec);
+    const bas = tronque(valeur, dec);
+    const haut = +(bas + 1 / puis(dec)).toFixed(dec);
+    const reponse = arrondi(valeur, dec);
+    const milieu = +((bas + haut) / 2).toFixed(dec + 1);
+    return {
+      prompt: `Arrondis $${tex(valeur)}$ ${rang.nom}.`,
+      input: { kind: 'number' },
+      check: numberCheck(reponse),
+      solution: `On encadre d'abord : $${tex(bas)} < ${tex(valeur)} < ${tex(haut)}$. Le milieu est $${tex(milieu)}$.<br>
+        Comme $${tex(valeur)}$ est ${valeur < milieu ? 'avant' : 'après'} le milieu, le plus proche est $${tex(reponse)}$.
+        ${reponse === bas ? '' : `Attention à ne pas <strong>tronquer</strong> : effacer les chiffres qui dépassent donnerait $${tex(bas)}$.`}`,
+    };
   };
 }
 
+const decEncadrerUnite = faireEncadrer(0);
+const decEncadrerDixieme = faireEncadrer(1);
+const decIntercalerUnite = faireIntercaler(0);
+const decIntercalerDixieme = faireIntercaler(1);
+const decArrondirUnite = faireArrondir(0);
+const decArrondirDixieme = faireArrondir(1);
 
 // ---------- 6e : angles ----------
 // On nomme la nature d'un angle en le comparant à l'angle droit. Deux entrées :
@@ -742,9 +755,12 @@ function angReconnaitre() {
 export const GENERATORS = {
   'dec-place-value': decPlaceValue,
   'dec-compare': decCompare,
-  'dec-encadrer': decEncadrer,
-  'dec-intercaler': decIntercaler,
-  'dec-arrondir': decArrondir,
+  'dec-encadrer-unite': decEncadrerUnite,
+  'dec-encadrer-dixieme': decEncadrerDixieme,
+  'dec-intercaler-unite': decIntercalerUnite,
+  'dec-intercaler-dixieme': decIntercalerDixieme,
+  'dec-arrondir-unite': decArrondirUnite,
+  'dec-arrondir-dixieme': decArrondirDixieme,
   'ang-nature': angNature,
   'ang-reconnaitre': angReconnaitre,
   'frac-of-quantity': fracOfQuantity,

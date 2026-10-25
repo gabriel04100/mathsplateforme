@@ -85,7 +85,13 @@ test('la réponse attendue se lit en clair quel que soit le type de question', a
     const q = generateSet(id, 1)[0];
     const texte = expectedText(q);
     assert.ok(texte, `${id} : réponse attendue vide`);
-    assert.ok(!/^\s*[\d.,-]+\s*,\s*[\d.,-]+/.test(texte), `${id} : « ${texte} » ressemble à un tableau de coefficients`);
+    // Le bug d'origine : un tableau de coefficients rendu tel quel, « 3,-1 ».
+    // On le nomme précisément plutôt que de deviner à la forme du texte — une
+    // réponse légitime peut contenir des virgules (« 2,2 < 2,207 < 2,3 »).
+    assert.ok(
+      !Array.isArray(q.check.expected) || texte !== String(q.check.expected),
+      `${id} : « ${texte} » est un tableau de coefficients affiché brut`
+    );
     assert.ok(!texte.includes('[object'), `${id} : « ${texte} » n'est pas lisible`);
     if (q.input.kind === 'choice') {
       assert.equal(texte, q.input.options[q.check.expected], `${id} : le QCM doit rendre le texte de la bonne proposition`);

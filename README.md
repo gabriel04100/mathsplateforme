@@ -32,9 +32,14 @@ Plateforme de mathématiques pour le collège (6e → 3e) : cours, animations in
 
 **Contenu livré** : 2 à 3 chapitres complets par niveau (41 chapitres prévus, les autres apparaissent « Bientôt »).
 
+Les trois gestes de 6e — **encadrer**, **intercaler**, **arrondir** — sont découpés par rang : un jeu et un
+exercice **à l'unité**, puis un jeu et un exercice **au dixième**. Deux moments de cours différents, donc
+deux étapes différentes ; on ne va pas jusqu'au centième, qui n'ajoute pas d'idée nouvelle à ce stade.
+Dans les jeux, l'élève **écrit** sa réponse — le dessin sert d'appui, il ne se clique pas.
+
 | Niveau | Chapitres complets | Animations |
 |---|---|---|
-| 6e | Nombres entiers et décimaux, Fractions, **Angles** | Droite graduée avec zoom, **Encadrer / Intercaler / Arrondir (jeux)**, **Défi décimaux**, Fractions en barres, **Mesurer un angle**, **Construire un angle** |
+| 6e | Nombres entiers et décimaux, Fractions, **Angles** | Droite graduée avec zoom, **6 jeux de décimaux** (encadrer, intercaler, arrondir — à l'unité puis au dixième) et leur **défi**, Fractions en barres, **Mesurer un angle**, **Construire un angle** |
 | 5e | Priorités opératoires, Nombres relatifs | Calcul pas à pas, Additions sur la droite |
 | 4e | Calcul littéral (développer), Théorème de Pythagore | Modèle des aires, Carrés de Pythagore |
 | 3e | Arithmétique, Fonctions affines, **Calcul littéral : développer** | Crible d'Ératosthène, Droite y = ax + b, Modèle des aires |
