@@ -5,7 +5,6 @@
 // renvoie les deux sources dans le même format, pour qu'aucune autre partie du
 // code n'ait à savoir d'où il vient. Les identifiants des chapitres de la base
 // sont préfixés (« c-12 ») pour ne jamais entrer en collision avec les fichiers.
-const LEVELS = ['6e', '5e', '4e', '3e'];
 const MAX_STEPS = 30;
 const MAX_BLOCKS = 40;
 const ID_PREFIX = 'c-';
@@ -260,7 +259,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
       out.title = title;
     }
     if (body.level !== undefined || !partial) {
-      if (!LEVELS.includes(body.level)) throw new ChapterError('Niveau invalide');
+      if (!content.levels().some((l) => l.id === body.level)) throw new ChapterError('Niveau invalide');
       out.level = body.level;
     }
     if (body.summary !== undefined) {
@@ -293,7 +292,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
   }
 
   return {
-    LEVELS,
+    levels: () => content.levels().map((l) => l.id),
     ID_PREFIX,
     dbIdOf,
     teacherIdOf,
@@ -488,4 +487,4 @@ function createChaptersService({ repos, content, exercises, shared }) {
   }
 }
 
-module.exports = { createChaptersService, ChapterError, LEVELS };
+module.exports = { createChaptersService, ChapterError };

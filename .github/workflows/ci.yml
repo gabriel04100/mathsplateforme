@@ -1,0 +1,39 @@
+# Vérification automatique à chaque envoi : le contenu pédagogique est valide,
+# et toute la suite de tests passe.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Vérifier le contenu pédagogique
+        run: npm run check-content
+
+      - name: Lancer les tests
+        run: npm test
+
+  image:
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - uses: actions/checkout@v4
+
+      # On vérifie seulement que l'image se construit : la publier demanderait
+      # un registre et des identifiants, ce qui n'a pas sa place ici.
+      - name: Construire l'image Docker
+        run: docker build -t maths-college:ci .

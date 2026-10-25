@@ -15,7 +15,8 @@
     "migrate": "node scripts/migrate.js",
     "create-teacher": "node scripts/create-teacher.js",
     "check-content": "node scripts/check-content.js",
-    "test": "node --test \"test/**/*.test.{js,mjs}\""
+    "test": "node --test \"test/**/*.test.{js,mjs}\"",
+    "verify": "npm run check-content && npm test"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

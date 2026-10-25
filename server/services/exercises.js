@@ -7,7 +7,6 @@
 // pas jouer. Le module est en ES ; on le charge une fois, à la demande.
 const { cleanQuestionDetail } = require('./question-detail');
 
-const LEVELS = ['6e', '5e', '4e', '3e'];
 const MAX_PER_TEACHER = 500;
 const CUSTOM_CHAPTER_ID = 'custom'; // espace de noms dans step_progress / attempts
 const stepIdOf = (exerciseId) => `ex-${exerciseId}`;
@@ -19,7 +18,8 @@ class ExerciseError extends Error {
   }
 }
 
-function createExercisesService({ repos, shared }) {
+function createExercisesService({ repos, shared, content }) {
+  const estNiveau = (id) => content.levels().some((l) => l.id === id);
   const engine = shared.template;
 
   function ownedExercise(teacherId, id) {
@@ -65,7 +65,7 @@ function createExercisesService({ repos, shared }) {
       out.title = title;
     }
     if (body.level !== undefined || !partial) {
-      if (!LEVELS.includes(body.level)) throw new ExerciseError('Niveau invalide');
+      if (!estNiveau(body.level)) throw new ExerciseError('Niveau invalide');
       out.level = body.level;
     }
     if (body.instructions !== undefined) {
@@ -114,7 +114,7 @@ function createExercisesService({ repos, shared }) {
   }
 
   return {
-    LEVELS,
+    levels: () => content.levels().map((l) => l.id),
     CUSTOM_CHAPTER_ID,
     stepIdOf,
     asStep,
@@ -229,4 +229,4 @@ function createExercisesService({ repos, shared }) {
   };
 }
 
-module.exports = { createExercisesService, ExerciseError, LEVELS, CUSTOM_CHAPTER_ID };
+module.exports = { createExercisesService, ExerciseError, CUSTOM_CHAPTER_ID };

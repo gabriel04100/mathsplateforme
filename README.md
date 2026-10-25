@@ -188,6 +188,56 @@ Le serveur **recalcule les bornes** de chaque score reçu (niveau et durée conn
 
 ---
 
+## Schéma du projet
+
+```
+                    NAVIGATEUR                        │              SERVEUR
+                                                      │
+  public/js/app.js ─── routeur, coquille, session     │   server/index.js ── démarrage, arrêt propre
+         │                                            │          │
+         ├── views/      un écran = un fichier        │   server/app.js ─── assemblage, injection
+         │   login · dashboard · level · chapter      │          │
+         │   free · custom-exercise · games           │          ├── middleware/  sécurité, session, rôles
+         │   revision · teacher · parcours            │          │
+         │   chapter-editor · exercise-editor         │          ├── routes/      valide, appelle, répond
+         │   diagnostic · documents · fiche           │          │   auth · learning · teacher
+         │                                            │          │   games · documents
+         ├── exercises/  generators · template ◄──────┼──────────┤
+         ├── content/    richtext ◄───────────────────┼───┐      ├── services/    toute la logique métier
+         ├── animations/ widgets ◄────────────────────┼───┤      │   auth · accounts · progress
+         ├── games/      tables · audio               │   │      │   content · chapters · exercises
+         ├── math/       expr                         │   │      │   games · documents
+         └── api.js      un seul client HTTP          │   │      │
+                                                      │   │      ├── repositories/  SEUL endroit avec du SQL
+                                                      │   │      │
+                                        shared-modules.js ┘      └── db/          connexion + migrations
+                                    (le serveur charge le code                         001 … 009
+                                     du navigateur pour valider
+                                      avec les mêmes règles)
+```
+
+**Le flux d'une requête** suit toujours le même chemin, sans raccourci :
+
+```mermaid
+flowchart LR
+  V[Vue] --> A[api.js] --> M[middleware<br/>session + rôle] --> R[route<br/>valide] --> S[service<br/>décide] --> P[repository<br/>SQL] --> D[(SQLite)]
+```
+
+Une vue ne parle jamais à une route sans passer par `api.js` ; une route ne contient aucune règle ; un service n'écrit jamais de SQL ; un repository ne décide de rien.
+
+**Les données** se répartissent en trois familles :
+
+| | Tables | Ce que ça garde |
+|---|---|---|
+| Comptes | `users`, `classes`, `sessions` | qui se connecte, et à quelle classe |
+| Parcours | `step_progress`, `attempts`, `question_results`, `last_position`, `chapter_confidence` | ce que chaque élève a fait, raté et ressenti |
+| Contenu de l'enseignant | `custom_chapters`, `chapter_overrides`, `custom_exercises`, `documents` | ce qu'il a écrit ou modifié par-dessus `content/` |
+| Jeux | `game_scores` | une ligne par partie, base du classement |
+
+Le programme livré vit dans `content/` (fichiers JSON), jamais en base : `services/chapters.js` fusionne les deux pour que le reste du code ignore d'où vient un chapitre.
+
+---
+
 ## Architecture (pensée pour grandir)
 
 ```
@@ -225,6 +275,69 @@ Choix faits dès maintenant pour faciliter la montée en charge :
 3. **Vérification des réponses côté serveur** si l'enjeu devient évaluatif (aujourd'hui un élève averti pourrait falsifier son score d'exercice ; les scores de jeu sont déjà bornés côté serveur, mais pas recalculés question par question).
 4. Éditeur de contenu en ligne pour l'enseignant, devoirs assignés à une classe avec date limite, export des résultats.
 5. Connexion via l'ENT (CAS / OpenID Connect) à la place des identifiants distribués.
+
+---
+
+## Mettre en ligne
+
+### Avant de déployer
+
+```bash
+npm run verify     # valide le contenu pédagogique puis lance toute la suite de tests
+```
+
+C'est aussi ce que fait la vérification automatique à chaque envoi sur GitHub (`.github/workflows/ci.yml`), qui construit l'image Docker en plus.
+
+### Avec Docker
+
+```bash
+docker build -t maths-college .
+docker run -d --name maths --restart unless-stopped \
+  -p 127.0.0.1:3000:3000 \
+  -v maths-data:/app/data \
+  -e TEACHER_USERNAME=gpizzo \
+  -e TEACHER_PASSWORD='un-mot-de-passe-long-et-unique' \
+  -e TEACHER_NAME='Gabriel Pizzo' \
+  maths-college
+```
+
+Le volume `maths-data` contient **toute** la mémoire de la plateforme : la base SQLite et les PDF déposés. C'est lui qu'il faut sauvegarder, et lui seul.
+
+Le compte enseignant n'est créé qu'au tout premier démarrage, et seulement si aucun n'existe. Les variables peuvent être retirées ensuite.
+
+### Derrière nginx, en HTTPS
+
+L'application écoute en HTTP sur le port 3000 et fait confiance au proxy local (`trust proxy: loopback`). Le cookie de session passe en `Secure` dès que `NODE_ENV=production` : **servir le site en HTTPS n'est pas optionnel**, sinon personne ne reste connecté.
+
+```nginx
+server {
+  server_name maths.exemple.fr;
+  client_max_body_size 30M;        # les PDF déposés peuvent peser jusqu'à 20 Mo
+
+  location / {
+    proxy_pass http://127.0.0.1:3000;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+}
+```
+
+### Sauvegarder
+
+```bash
+docker run --rm -v maths-data:/data -v "$PWD":/sortie alpine \
+  tar czf /sortie/maths-$(date +%F).tar.gz -C /data .
+```
+
+La base contient des **données d'élèves** : noms, identifiants, progression. La sauvegarde doit être traitée comme telle — chiffrée au repos, et pas déposée n'importe où.
+
+### Points de vigilance
+
+- **Le port 3000 n'est pas exposé publiquement** dans la commande ci-dessus (`127.0.0.1:3000`) : seul nginx y accède.
+- **`.env` ne doit jamais entrer dans le dépôt** ; `.gitignore` et `.dockerignore` l'excluent déjà.
+- **Les scores d'exercices sont calculés par le navigateur.** Un élève averti peut en falsifier un. Les scores de jeux, eux, sont bornés côté serveur. Tant que la plateforme sert à s'entraîner, c'est sans conséquence ; si elle devient évaluative, il faudra vérifier les réponses côté serveur.
+- **Une seule instance à la fois.** SQLite et la limitation des connexions vivent en mémoire d'un seul processus. Pour passer à plusieurs instances : PostgreSQL et Redis (voir plus bas).
 
 ---
 

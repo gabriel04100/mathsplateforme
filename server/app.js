@@ -25,10 +25,10 @@ async function createApp(config, { log = console } = {}) {
   const repos = createRepositories(db);
   const content = createContentService(config.contentDir);
   const auth = createAuthService({ repos, config });
-  const exercises = createExercisesService({ repos, shared });
+  const exercises = createExercisesService({ repos, shared, content });
   const chapters = createChaptersService({ repos, content, exercises, shared });
   const progress = createProgressService({ repos, content, chapters, exercises });
-  const accounts = createAccountsService({ repos, auth });
+  const accounts = createAccountsService({ repos, auth, content });
   const games = createGamesService({ repos });
   const documents = createDocumentsService({ repos, config, content });
   const services = { repos, content, auth, progress, accounts, exercises, chapters, games, documents, config };

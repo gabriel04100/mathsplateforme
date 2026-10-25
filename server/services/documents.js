@@ -9,7 +9,6 @@ const fs = require('node:fs');
 const path = require('node:path');
 const crypto = require('node:crypto');
 
-const LEVELS = ['6e', '5e', '4e', '3e'];
 const MAX_BYTES = 20 * 1024 * 1024; // 20 Mo : large pour un cours scanné
 const MAX_PER_TEACHER = 500;
 const PDF_MAGIC = '%PDF-';
@@ -23,6 +22,7 @@ class DocumentError extends Error {
 
 function createDocumentsService({ repos, config, content }) {
   const dir = path.join(path.dirname(config.dbFile), 'documents');
+  const estNiveau = (id) => content.levels().some((l) => l.id === id);
 
   function ensureDir() {
     fs.mkdirSync(dir, { recursive: true });
@@ -64,7 +64,6 @@ function createDocumentsService({ repos, config, content }) {
   });
 
   return {
-    LEVELS,
     MAX_BYTES,
 
     listForTeacher: (teacherId) => repos.documents.listByTeacher(teacherId).map(publicDoc),
@@ -89,7 +88,7 @@ function createDocumentsService({ repos, config, content }) {
 
       const title = String(body.title ?? '').trim().replace(/\s+/g, ' ');
       if (title.length < 2 || title.length > 100) throw new DocumentError('Titre : entre 2 et 100 caractères');
-      if (!LEVELS.includes(body.level)) throw new DocumentError('Niveau invalide');
+      if (!estNiveau(body.level)) throw new DocumentError('Niveau invalide');
 
       let chapterId = null;
       if (body.chapterId) {
@@ -187,4 +186,4 @@ function createDocumentsService({ repos, config, content }) {
   };
 }
 
-module.exports = { createDocumentsService, DocumentError, LEVELS, MAX_BYTES };
+module.exports = { createDocumentsService, DocumentError, MAX_BYTES };

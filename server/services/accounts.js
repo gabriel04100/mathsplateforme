@@ -14,7 +14,6 @@ const WORDS = [
   'comete', 'dragon', 'orage', 'panda', 'radis', 'sabre', 'tulipe', 'vague', 'kiwi', 'menthe', 'robot', 'soleil',
   'banane', 'koala', 'cerise', 'galet', 'hibou', 'jungle', 'loutre', 'mangue', 'navire', 'olive', 'phare', 'renard',
 ];
-const LEVELS = ['6e', '5e', '4e', '3e'];
 const USERNAME_RE = /^[a-z0-9._-]{3,40}$/;
 // Lettres (accentuées), espaces, apostrophes, points et traits d'union : rejette chiffres, symboles, emojis…
 const NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'’.\- ]{0,58}[A-Za-zÀ-ÖØ-öø-ÿ])?$/;
@@ -69,7 +68,10 @@ function checkPasswordLength(password, label) {
   if (password.length > MAX_PASSWORD_LENGTH) throw new AccountError(`${label} : mot de passe trop long (${MAX_PASSWORD_LENGTH} caractères maximum)`);
 }
 
-function createAccountsService({ repos, auth }) {
+function createAccountsService({ repos, auth, content }) {
+  // Les niveaux existants viennent du programme (content/levels.json) :
+  // une seule source de vérité, pas une copie à tenir à jour.
+  const estNiveau = (id) => content.levels().some((l) => l.id === id);
   function ownedClass(teacherId, classId) {
     const c = repos.classes.findById(Number(classId));
     if (!c || c.teacher_id !== teacherId) throw new AccountError('Classe introuvable', 404);
@@ -117,7 +119,7 @@ function createAccountsService({ repos, auth }) {
     createClass(teacherId, { name, level, schoolYear }) {
       name = String(name || '').trim();
       if (!name || name.length > 40) throw new AccountError('Nom de classe requis (40 caractères max)');
-      if (!LEVELS.includes(level)) throw new AccountError('Niveau invalide');
+      if (!estNiveau(level)) throw new AccountError('Niveau invalide');
       try {
         const id = repos.classes.create({ name, level, teacherId, schoolYear: schoolYear || currentSchoolYear() });
         return repos.classes.findById(id);
@@ -129,7 +131,7 @@ function createAccountsService({ repos, auth }) {
 
     updateClass(teacherId, classId, { name, level, archived }) {
       ownedClass(teacherId, classId);
-      if (level !== undefined && !LEVELS.includes(level)) throw new AccountError('Niveau invalide');
+      if (level !== undefined && !estNiveau(level)) throw new AccountError('Niveau invalide');
       repos.classes.update(Number(classId), {
         name: name?.trim() || undefined,
         level,
@@ -257,4 +259,4 @@ function createAccountsService({ repos, auth }) {
   };
 }
 
-module.exports = { createAccountsService, AccountError, generatePassword, currentSchoolYear, LEVELS };
+module.exports = { createAccountsService, AccountError, generatePassword, currentSchoolYear };

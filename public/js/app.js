@@ -68,7 +68,9 @@ function renderShell(activeNav) {
     header.innerHTML = `<a class="brand" href="/connexion" data-link>${brandMark()}<span>Maths Collège</span></a>`;
     return;
   }
-  const levelTabs = ['6e', '5e', '4e', '3e']
+  // Les niveaux viennent du catalogue dès qu'il est chargé ; la liste écrite
+  // ici ne sert que le tout premier affichage, avant la première réponse.
+  const levelTabs = (state.catalog?.length ? state.catalog.map((l) => l.id) : ['6e', '5e', '4e', '3e'])
     .map((l) => `<a href="/niveau/${l}" data-link class="divider lv-${l}${activeNav === `level-${l}` ? ' active' : ''}"${activeNav === `level-${l}` ? ' aria-current="page"' : ''}>${l}</a>`)
     .join('');
   const isTeacher = state.user.role === 'teacher';
@@ -169,6 +171,8 @@ export function setUser(u) {
 (async function boot() {
   try {
     state.user = (await api.get('/auth/me')).user;
+    // Le catalogue sert aussi à dessiner la barre du haut : on l'a dès le départ.
+    if (state.user) await getCatalog().catch(() => {});
   } catch {
     state.user = null;
   }

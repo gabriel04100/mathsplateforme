@@ -1,0 +1,13 @@
+# Ce qui ne doit jamais entrer dans l'image.
+node_modules
+data
+*.sqlite*
+.env
+.git
+.github
+.claude
+test
+README.md
+Dockerfile
+.dockerignore
+.DS_Store
