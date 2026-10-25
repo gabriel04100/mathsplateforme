@@ -17,7 +17,6 @@ Plateforme de mathématiques pour le collège (6e → 3e) : cours, animations in
 - Questions **différentes à chaque série** (générateurs aléatoires), correction détaillée après chaque réponse.
 - **Séances** : onglet à part pour les activités et feuilles d'exercices données pour une heure de cours. Hors parcours : jamais verrouillées, elles ne verrouillent rien.
 - **Jeux** : onglet commun à toutes les classes, avec un **classement global** (meilleur score par élève, toutes classes confondues, filtrable par période).
-- **Traduction** (bouton 🌐) : afficher le cours et l'interface dans une autre langue, pour les élèves allophones. Désactivée tant qu'aucun service de traduction n'est configuré — voir « Traduction » plus bas.
 
 **Côté enseignant** (`/prof`)
 - Création de classes (nom + niveau, année scolaire automatique).
@@ -211,37 +210,6 @@ Les formules ne sont **jamais** exécutées comme du code : elles sont analysée
 
 ---
 
-## Traduction (élèves allophones)
-
-Le bouton 🌐 de la barre du haut affiche le cours et l'interface dans une autre langue. Seize langues
-sont proposées — celles qu'on croise le plus en classe, plus les langues vivantes du collège.
-
-**Le navigateur de l'élève ne parle jamais au traducteur.** Il demande au serveur, qui appelle le
-fournisseur et garde le résultat en cache (`translations`). Aucune adresse IP d'élève ne sort, la
-politique de sécurité du site (CSP) reste fermée, et un paragraphe de cours n'est traduit qu'une fois
-pour toute la classe. Ce qui part : le texte affiché — jamais un pseudonyme, un identifiant, un score.
-
-Rien n'est activé par défaut : sans fournisseur, le bouton annonce simplement que la traduction n'est
-pas disponible. Pour l'activer, deux possibilités dans `.env` :
-
-```bash
-# 1. LibreTranslate — logiciel libre, auto-hébergeable, gratuit
-TRANSLATE_PROVIDER=libretranslate
-TRANSLATE_URL=https://mon-instance-libretranslate
-# TRANSLATE_KEY=…        (si votre instance en demande une)
-
-# 2. Google Cloud Translation (API v2) — facturé à l'usage
-TRANSLATE_PROVIDER=google
-TRANSLATE_KEY=votre-clé-api
-```
-
-**Limite connue.** La traduction remplace le texte *à l'intérieur* du HTML déjà construit, nœud par
-nœud. Une phrase coupée par un mot en gras part donc en deux morceaux chez le traducteur, ce qui donne
-parfois une tournure maladroite. C'est le prix à payer pour que les formules (KaTeX), les figures et la
-mise en page restent intactes, et pour qu'un cours à moitié traduit reste lisible.
-
----
-
 ## Les jeux et le classement
 
 Les jeux sont communs à toutes les classes. Le premier, **les tables de multiplication**, propose quatre niveaux (*Découverte* 2→5, *Classique* 2→10, *Expert* 2→12, *Maître* avec des trous `7 × ? = 56`) et trois durées (30, 60, 120 s).
@@ -265,8 +233,8 @@ Le serveur **recalcule les bornes** de chaque score reçu (niveau et durée conn
 ## Schéma du projet
 
 > **Schéma graphique complet** : [`docs/architecture.html`](docs/architecture.html) — six vues
-> (architecture générale, cycle d'un exercice, typologies de publication, verrouillage du parcours,
-> données conservées, traduction). À ouvrir dans un navigateur.
+> (architecture générale, cycle d'un exercice, typologies de publication, données conservées,
+> et où se trouve chaque chose). À ouvrir dans un navigateur.
 
 ```
                     NAVIGATEUR                        │              SERVEUR
@@ -279,19 +247,18 @@ Le serveur **recalcule les bornes** de chaque score reçu (niveau et durée conn
          │   revision · teacher · parcours · seances  │          │
          │   chapter-editor · exercise-editor         │          ├── routes/      valide, appelle, répond
          │   diagnostic · documents · fiche           │          │   auth · learning · teacher
-         │                                            │          │   games · documents · translate
+         │                                            │          │   games · documents
          ├── exercises/  generators · template        │          │
          │               random (graine) ◄────────────┼──────────┤
          ├── content/    richtext ◄───────────────────┼───┐      ├── services/    toute la logique métier
          ├── animations/ widgets · angles ◄───────────┼───┤      │   auth · accounts · pseudonyms
          │               decimaux                     │   │      │   progress · series · content
          ├── games/      tables · audio               │   │      │   chapters · exercises · games
-         ├── math/       expr                         │   │      │   documents · translate
-         ├── translate.js  le bouton 🌐               │   │      │
+         ├── math/       expr                         │   │      │   documents
          └── api.js      un seul client HTTP          │   │      ├── repositories/  SEUL endroit avec du SQL
                                                       │   │      │
                                         shared-modules.js ┘      └── db/          connexion + migrations
-                                    (le serveur charge le code                         001 … 013
+                                    (le serveur charge le code                         001 … 014
                                      du navigateur pour valider
                                       avec les mêmes règles)
 ```
@@ -313,7 +280,7 @@ Une vue ne parle jamais à une route sans passer par `api.js` ; une route ne con
 | Parcours | `step_progress`, `attempts`, `question_results`, `last_position`, `chapter_confidence`, `exercise_sessions` | ce que chaque élève a fait, raté et ressenti ; et la graine de chaque série en cours |
 | Contenu de l'enseignant | `custom_chapters`, `chapter_overrides`, `custom_exercises`, `documents` | ce qu'il a écrit ou modifié par-dessus `content/`. `custom_chapters.kind` distingue chapitre et séance |
 | Jeux | `game_scores` | une ligne par partie, base du classement |
-| Service | `translations`, `schema_migrations` | le texte déjà traduit, par langue ; les migrations appliquées |
+| Service | `schema_migrations` | les migrations déjà appliquées |
 
 Le programme livré vit dans `content/` (fichiers JSON), jamais en base : `services/chapters.js` fusionne les deux pour que le reste du code ignore d'où vient un chapitre.
 
@@ -369,7 +336,49 @@ npm run verify     # valide le contenu pédagogique puis lance toute la suite de
 
 C'est aussi ce que fait la vérification automatique à chaque envoi sur GitHub (`.github/workflows/ci.yml`), qui construit l'image Docker en plus.
 
-### Avec Docker
+### Le plus simple : Render (recommandé)
+
+Tout est déjà décrit dans [`render.yaml`](render.yaml) : Render le lit, crée le service, le disque et
+les variables, et **redéploie tout seul à chaque `git push`**. Pas de terminal, pas de serveur à
+administrer, pas de certificat à renouveler — HTTPS est fourni.
+
+1. Aller sur [render.com](https://render.com) et **se connecter avec GitHub**.
+2. **New → Blueprint**, choisir le dépôt `mathsplateforme`, puis *Connect*.
+3. Render affiche ce qu'il va créer et demande les deux seules valeurs secrètes :
+   - `TEACHER_USERNAME` — votre identifiant enseignant, par exemple `gpizzo` ;
+   - `TEACHER_PASSWORD` — un mot de passe long, **que vous notez tout de suite**.
+4. **Apply**. Le premier déploiement prend trois à quatre minutes.
+5. L'adresse apparaît en haut de la page : `https://maths-college.onrender.com` (ou un nom proche,
+   Render ajoute un suffixe si celui-ci est pris). C'est l'adresse à donner aux élèves.
+6. Se connecter avec les identifiants de l'étape 3, créer une classe, créer les comptes élèves.
+
+Au premier démarrage, la base se crée toute seule et le compte enseignant est créé à partir des deux
+variables. Ensuite, elles ne servent plus : le mot de passe se change depuis l'application.
+
+**Ce que ça coûte.** Le disque persistant impose le plan *Starter* : **7 $/mois** pour le service, plus
+0,25 $/mois pour 1 Go de disque. Les instances gratuites de Render n'ont pas de disque — la base
+repartirait de zéro à chaque mise à jour — et s'endorment après quinze minutes, avec une minute de
+réveil : inutilisable en classe.
+
+**Pour mettre à jour** la plateforme ensuite : `git push`. Render reconstruit et redéploie seul, et les
+migrations s'appliquent au démarrage. Rien d'autre à faire.
+
+**Un nom de domaine à vous** (par exemple `maths.mondomaine.fr`) s'ajoute en deux minutes dans
+*Settings → Custom Domains*, avec le certificat géré par Render.
+
+### Sauvegarder depuis Render
+
+Le disque survit aux déploiements, mais pas à une suppression du service. Une fois par trimestre :
+*Dashboard → le service → Shell*, puis
+
+```bash
+cat /var/data/plateforme.sqlite | base64
+```
+
+…et recopier le résultat en local, ou plus simplement utiliser la sauvegarde automatique des disques
+proposée par Render (*Settings → Disk → Snapshots*).
+
+### Autre option : votre propre serveur, avec Docker
 
 ```bash
 docker build -t maths-college .
@@ -386,7 +395,7 @@ Le volume `maths-data` contient **toute** la mémoire de la plateforme : la base
 
 Le compte enseignant n'est créé qu'au tout premier démarrage, et seulement si aucun n'existe. Les variables peuvent être retirées ensuite.
 
-### Derrière nginx, en HTTPS
+#### Derrière nginx, en HTTPS
 
 L'application écoute en HTTP sur le port 3000 et fait confiance au proxy local (`trust proxy: loopback`). Le cookie de session passe en `Secure` dès que `NODE_ENV=production` : **servir le site en HTTPS n'est pas optionnel**, sinon personne ne reste connecté.
 
@@ -404,7 +413,7 @@ server {
 }
 ```
 
-### Sauvegarder
+#### Sauvegarder (serveur à soi)
 
 ```bash
 docker run --rm -v maths-data:/data -v "$PWD":/sortie alpine \
@@ -418,11 +427,11 @@ serveur dès qu'il a été recopié dans votre tableur.
 
 ### Points de vigilance
 
-- **Le port 3000 n'est pas exposé publiquement** dans la commande ci-dessus (`127.0.0.1:3000`) : seul nginx y accède.
+- **Le port 3000 n'est pas exposé publiquement** dans la commande Docker ci-dessus (`127.0.0.1:3000`) : seul nginx y accède. Sur Render, la question ne se pose pas — l'hébergeur est seul devant.
+- **`TRUST_PROXY` doit valoir le nombre de proxys devant l'application** : `1` derrière Render ou nginx. Mal réglé, la limitation des tentatives de connexion compte mal. En local, la valeur par défaut (`loopback`) convient.
 - **`.env` ne doit jamais entrer dans le dépôt** ; `.gitignore` et `.dockerignore` l'excluent déjà. Le dossier `data/` non plus — il contient la base, les PDF déposés et l'export des identités.
-- **La traduction envoie du texte à un tiers** si vous la configurez avec Google. Ce texte est le contenu pédagogique affiché, jamais une donnée d'élève ; une instance LibreTranslate auto-hébergée évite la question.
 - **Les scores d'exercices sont vérifiés par le serveur** (voir l'architecture). Les scores de jeux, eux, sont seulement *bornés* : le serveur vérifie qu'un résultat est atteignable, pas qu'il a été réellement obtenu — un jeu de rapidité ne se rejoue pas question par question.
-- **Une seule instance à la fois.** SQLite et la limitation des connexions vivent en mémoire d'un seul processus. Pour passer à plusieurs instances : PostgreSQL et Redis (voir plus bas).
+- **Une seule instance à la fois.** SQLite et la limitation des connexions vivent en mémoire d'un seul processus. Ne pas augmenter le nombre d'instances chez l'hébergeur. Pour passer à plusieurs : PostgreSQL et Redis (voir plus bas).
 
 ---
 

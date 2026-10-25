@@ -10,10 +10,17 @@ function int(name, fallback) {
   return Number.isFinite(v) ? v : fallback;
 }
 
+// Derrière un reverse-proxy (nginx, ou l'hébergeur), Express ne doit faire
+// confiance à l'en-tête « client réel » que du nombre de proxys annoncé : sinon
+// n'importe qui peut se déclarer n'importe quelle adresse. 'loopback' convient
+// en local ; chez un hébergeur, un seul saut : TRUST_PROXY=1.
+const trustProxy = process.env.TRUST_PROXY || 'loopback';
+
 module.exports = {
   env,
   isProd: env === 'production',
   port: int('PORT', 3000),
+  trustProxy: /^\d+$/.test(trustProxy) ? Number(trustProxy) : trustProxy,
   root,
   // Base SQLite (fichier). Pour passer à PostgreSQL, seul server/db/ et les repositories changent.
   dbFile: process.env.DB_FILE || path.join(root, 'data', 'plateforme.sqlite'),
@@ -27,17 +34,6 @@ module.exports = {
   loginRateLimit: {
     windowMs: 15 * 60 * 1000,
     max: int('LOGIN_MAX_ATTEMPTS', 10),
-  },
-  // Traduction automatique du contenu (élèves allophones). Désactivée tant
-  // qu'aucun fournisseur n'est choisi : le bouton annonce alors simplement
-  // qu'elle n'est pas disponible. Voir le README, section « Traduction ».
-  //   TRANSLATE_PROVIDER=libretranslate  TRANSLATE_URL=https://mon-instance
-  //   TRANSLATE_PROVIDER=google          TRANSLATE_KEY=…
-  translate: {
-    provider: process.env.TRANSLATE_PROVIDER || '',
-    url: process.env.TRANSLATE_URL || '',
-    key: process.env.TRANSLATE_KEY || '',
-    maxCharsPerRequest: int('TRANSLATE_MAX_CHARS', 8000),
   },
   // Compte enseignant créé automatiquement au premier démarrage s'il n'en existe aucun.
   bootstrapTeacher: {

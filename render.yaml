@@ -1,0 +1,44 @@
+# Mise en ligne sur Render — https://render.com
+#
+# Ce fichier décrit le service complet : Render le lit, crée tout, et redéploie
+# à chaque `git push`. Rien à installer, pas de terminal, HTTPS automatique.
+#
+# Deux choses seulement sont demandées à la création : l'identifiant et le mot
+# de passe du compte enseignant (marqués `sync: false`, donc jamais écrits ici).
+#
+# Le disque est indispensable : sans lui, la base SQLite et les PDF déposés
+# repartiraient de zéro à chaque mise à jour. C'est aussi ce qui impose un plan
+# payant — les instances gratuites de Render n'ont pas de disque persistant et
+# s'endorment au bout de quinze minutes.
+services:
+  - type: web
+    name: maths-college
+    runtime: node
+    plan: starter
+    region: frankfurt # Francfort : le plus proche, et dans l'Union européenne
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    disk:
+      name: donnees
+      mountPath: /var/data
+      sizeGB: 1 # la base et les PDF ; agrandissable sans redéployer
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # La base vit sur le disque, et les documents à côté d'elle.
+      - key: DB_FILE
+        value: /var/data/plateforme.sqlite
+      # Un seul proxy devant l'application : celui de Render.
+      - key: TRUST_PROXY
+        value: "1"
+      # Compte enseignant créé au tout premier démarrage, s'il n'en existe aucun.
+      - key: TEACHER_USERNAME
+        sync: false
+      - key: TEACHER_PASSWORD
+        sync: false
+      - key: TEACHER_NAME
+        value: Gabriel Pizzo

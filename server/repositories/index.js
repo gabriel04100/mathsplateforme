@@ -355,22 +355,6 @@ function createRepositories(db) {
     remove: (id) => db.prepare('DELETE FROM custom_chapters WHERE id = ?').run(id),
   };
 
-  // Cache des traductions : un texte source, une langue, une traduction.
-  const translations = {
-    getMany: (target, hashes) => {
-      if (!hashes.length) return new Map();
-      const trous = hashes.map(() => '?').join(',');
-      const rows = db.prepare(`SELECT source_hash, translated FROM translations WHERE target = ? AND source_hash IN (${trous})`).all(target, ...hashes);
-      return new Map(rows.map((r) => [r.source_hash, r.translated]));
-    },
-    saveMany: (target, entrees) => {
-      const ins = db.prepare('INSERT OR REPLACE INTO translations (target, source_hash, source, translated) VALUES (?, ?, ?, ?)');
-      db.transaction(() => {
-        for (const e of entrees) ins.run(target, e.sourceHash, e.source, e.translated);
-      })();
-    },
-  };
-
   // « Ma version » d'un chapitre livré dans content/ : déplacé, masqué ou réécrit.
   const chapterOverrides = {
     listByTeacher: (teacherId) => db.prepare('SELECT * FROM chapter_overrides WHERE teacher_id = ?').all(teacherId),
@@ -503,7 +487,7 @@ function createRepositories(db) {
 
   return {
     users, classes, sessions, progress, attempts, questionResults, confidence, exerciseSessions, positions,
-    customExercises, customChapters, chapterOverrides, documents, gameScores, translations,
+    customExercises, customChapters, chapterOverrides, documents, gameScores,
     transaction: (fn) => db.transaction(fn)(),
   };
 }

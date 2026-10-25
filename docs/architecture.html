@@ -69,9 +69,9 @@ footer{color:var(--muted);font-size:.9rem;border-top:2px solid var(--rule);paddi
 <main>
 
 <h1>Maths Collège — comment l'application fonctionne</h1>
-<p class="lede">Schéma de fonctionnement de la plateforme, à jour. Six vues : l'architecture générale,
-le cycle d'un exercice, les deux typologies de publication, le verrouillage du parcours, les données
-conservées (et celles qui ne le sont pas), et la traduction.</p>
+<p class="lede">Schéma de fonctionnement de la plateforme, à jour. Cinq vues : l'architecture générale,
+le cycle d'un exercice, les deux typologies de publication, les données conservées (et celles qui ne
+le sont pas), et où se trouve chaque chose dans le dépôt.</p>
 
 <!-- ===================================================================== -->
 <h2>1 · Vue d'ensemble</h2>
@@ -130,13 +130,13 @@ et dans le serveur, donc les deux appliquent exactement les mêmes règles.</p>
   <rect class="b" x="348" y="116" width="284" height="62" rx="9"/>
   <text class="t ti" x="362" y="138">routes/ — fines</text>
   <text class="t sm" x="362" y="155">auth · learning · teacher · games</text>
-  <text class="t sm" x="362" y="170">documents · translate</text>
+  <text class="t sm" x="362" y="170">documents</text>
 
   <rect class="b" x="348" y="190" width="284" height="94" rx="9"/>
   <text class="t ti" x="362" y="212">services/ — toute la logique</text>
   <text class="t sm" x="362" y="230">content · chapters · progress · series</text>
   <text class="t sm" x="362" y="246">accounts · pseudonyms · exercises</text>
-  <text class="t sm" x="362" y="262">games · documents · translate · auth</text>
+  <text class="t sm" x="362" y="262">games · documents · auth</text>
 
   <rect class="b" x="348" y="296" width="284" height="54" rx="9"/>
   <text class="t ti" x="362" y="318">repositories/</text>
@@ -150,7 +150,7 @@ et dans le serveur, donc les deux appliquent exactement les mêmes règles.</p>
   <rect class="b ok" x="698" y="56" width="250" height="78" rx="9"/>
   <text class="t ti" x="712" y="78">data/plateforme.sqlite</text>
   <text class="t sm" x="712" y="96">comptes, progression, séries,</text>
-  <text class="t sm" x="712" y="112">scores, séances, traductions</text>
+  <text class="t sm" x="712" y="112">scores, séances, confiance</text>
 
   <rect class="b" x="698" y="148" width="250" height="78" rx="9"/>
   <text class="t ti" x="712" y="170">content/ — fichiers JSON</text>
@@ -300,7 +300,7 @@ exercices). Une seule colonne en base les distingue : <code>custom_chapters.kind
 
 <!-- ===================================================================== -->
 <h2>4 · Ce que la base contient</h2>
-<p>Seize tables, qui se rangent en quatre familles. La colonne de droite dit ce qui a changé récemment.</p>
+<p>Quinze tables, qui se rangent en quatre familles. La colonne de droite dit ce qui a changé récemment.</p>
 
 <table>
   <thead><tr><th>Famille</th><th>Tables</th><th>À noter</th></tr></thead>
@@ -313,8 +313,8 @@ exercices). Une seule colonne en base les distingue : <code>custom_chapters.kind
       <code>chapter_overrides</code> garde « ma version » d'un chapitre livré sans toucher aux fichiers.</td></tr>
     <tr><td><strong>Travail de l'élève</strong></td><td><code>step_progress</code>, <code>attempts</code>, <code>question_results</code>, <code>last_position</code>, <code>chapter_confidence</code>, <code>exercise_sessions</code>, <code>game_scores</code></td>
       <td><code>exercise_sessions</code> porte la graine d'une série et la marque comme consommée : c'est ce qui rend un score infalsifiable.</td></tr>
-    <tr><td><strong>Service</strong></td><td><code>translations</code>, <code>schema_migrations</code></td>
-      <td><code>translations</code> met en cache le texte déjà traduit, par langue (migration 013).</td></tr>
+    <tr><td><strong>Service</strong></td><td><code>schema_migrations</code></td>
+      <td>les migrations déjà appliquées : la base se met à jour toute seule au démarrage.</td></tr>
   </tbody>
 </table>
 
@@ -358,53 +358,7 @@ de classe ou un diagnostic.
 </div>
 
 <!-- ===================================================================== -->
-<h2>5 · La traduction du contenu</h2>
-<p>Pour les élèves allophones, un bouton 🌐 affiche le cours et l'interface dans une autre langue.
-Le navigateur de l'élève ne parle jamais au traducteur : il demande au serveur, qui appelle le
-fournisseur et garde le résultat. Aucune adresse IP d'élève ne sort, et la politique de sécurité du
-site reste fermée (aucun script tiers).</p>
-
-<div class="card">
-<svg viewBox="0 0 980 240" role="img" aria-label="Chemin d'une demande de traduction">
-  <rect class="b blue" x="20" y="60" width="200" height="90" rx="10"/>
-  <text class="t ti" x="34" y="86">Navigateur</text>
-  <text class="t sm" x="34" y="106">relève les textes affichés</text>
-  <text class="t sm" x="34" y="124">(jamais les formules,</text>
-  <text class="t sm" x="34" y="140">jamais le pseudonyme)</text>
-
-  <path class="ar blue" d="M 226 105 L 296 105"/>
-  <text class="t sm c" x="261" y="96">POST</text>
-
-  <rect class="b" x="302" y="60" width="200" height="90" rx="10"/>
-  <text class="t ti" x="316" y="86">Serveur</text>
-  <text class="t sm" x="316" y="106">vérifie la langue, la taille,</text>
-  <text class="t sm" x="316" y="124">la session de l'élève</text>
-
-  <path class="ar" d="M 508 105 L 578 105"/>
-  <rect class="b ok" x="584" y="60" width="180" height="90" rx="10"/>
-  <text class="t ti" x="598" y="86">Cache</text>
-  <text class="t sm" x="598" y="106">déjà traduit ?</text>
-  <text class="t sm" x="598" y="124">on s'arrête là</text>
-
-  <path class="ar dash" d="M 770 105 L 840 105"/>
-  <rect class="b ghost" x="846" y="60" width="118" height="90" rx="10"/>
-  <text class="t ti c" x="905" y="86">Fournisseur</text>
-  <text class="t sm c" x="905" y="106">LibreTranslate</text>
-  <text class="t sm c" x="905" y="124">ou Google</text>
-
-  <text class="t sm" x="20" y="190">Le fournisseur n'est appelé que pour les textes jamais vus. Sans fournisseur configuré, le bouton annonce</text>
-  <text class="t sm" x="20" y="210">simplement que la traduction n'est pas disponible : rien ne casse, et aucune donnée ne part.</text>
-</svg>
-</div>
-
-<h3>Limite connue</h3>
-<p>La traduction remplace le texte <em>à l'intérieur</em> du HTML déjà construit, nœud par nœud. Une phrase
-coupée par un mot en gras part donc en deux morceaux chez le traducteur, ce qui donne parfois une
-tournure maladroite. C'est le prix à payer pour que les formules, les figures et la mise en page restent
-intactes — et pour qu'un cours à moitié traduit reste toujours lisible.</p>
-
-<!-- ===================================================================== -->
-<h2>6 · Où sont les choses</h2>
+<h2>5 · Où sont les choses</h2>
 <pre style="background:var(--paper-2);border:2px solid var(--rule);border-radius:12px;padding:16px;overflow-x:auto;font-size:.88rem;line-height:1.55"><code>mathsplateforme/
 ├── content/            le programme livré, en JSON versionné
 │   ├── levels.json
@@ -413,7 +367,6 @@ intactes — et pour qu'un cours à moitié traduit reste toujours lisible.</p>
 │   ├── index.html · css/app.css
 │   └── js/
 │       ├── app.js            routage, barre du haut
-│       ├── translate.js      le bouton 🌐
 │       ├── views/            un fichier par écran
 │       ├── animations/       widgets.js · angles.js · decimaux.js
 │       ├── exercises/        generators.js · template.js · random.js
@@ -427,7 +380,7 @@ intactes — et pour qu'un cours à moitié traduit reste toujours lisible.</p>
 │   ├── repositories/         le seul SQL du projet
 │   └── db/migrations/        001 → 013
 ├── scripts/            migrate · create-teacher · check-content
-├── test/               9 fichiers, 85 tests
+├── test/               8 fichiers, 81 tests
 ├── docs/               ce schéma
 └── data/               ignoré par git : la base, les PDF, l'export des identités</code></pre>
 

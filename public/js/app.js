@@ -2,7 +2,6 @@
 // Plateforme Maths Collège — Gabriel Pizzo
 import { api, setUnauthorizedHandler } from './api.js';
 import { esc } from './ui.js';
-import { chargerEtat, monterSelecteur, traduireAffichage, langueActive } from './translate.js';
 import { loginView } from './views/login.js';
 import { dashboardView } from './views/dashboard.js';
 import { levelView } from './views/level.js';
@@ -82,7 +81,7 @@ function renderShell(activeNav) {
   // Trois blocs : la marque, la navigation (intercalaires + liens), le bloc utilisateur.
   // En dessous de 1080px, « topnav » bascule seul sur une deuxième rangée.
   header.innerHTML = `
-    <a class="brand" href="/" data-link>${brandMark()}<span data-no-translate>Maths Collège</span></a>
+    <a class="brand" href="/" data-link>${brandMark()}<span>Maths Collège</span></a>
     <div class="topnav">
       <nav class="dividers" aria-label="Niveaux">${levelTabs}</nav>
       <nav class="navrow" aria-label="Menu">
@@ -94,15 +93,9 @@ function renderShell(activeNav) {
     </div>
     <div class="userbox">
       <span class="nav-sep" aria-hidden="true"></span>
-      <span id="langbox"></span>
-      <span class="who" title="${esc(state.user.username)}" data-no-translate>${esc(state.user.displayName)}</span>
+      <span class="who" title="${esc(state.user.username)}">${esc(state.user.displayName)}</span>
       <button type="button" id="logout">Déconnexion</button>
     </div>`;
-  // Le sélecteur de langue. L'état du service est demandé une seule fois (la
-  // réponse est mémorisée) ; le sélecteur apparaît dès qu'elle arrive, et
-  // redessine la vue quand on change de langue.
-  const langbox = header.querySelector('#langbox');
-  chargerEtat().then(() => langbox.isConnected && monterSelecteur(langbox, () => render()));
   header.querySelector('#logout').onclick = async () => {
     await api.post('/auth/logout').catch(() => {});
     state.user = null;
@@ -155,12 +148,6 @@ export async function render() {
     el.innerHTML = `<section class="page narrow"><h1>Impossible d'afficher la page</h1><p>${esc(e.message)}</p><a class="btn" href="/" data-link>Retour à l'accueil</a></section>`;
   }
   el.focus({ preventScroll: true });
-  // La traduction s'applique après coup, sur le HTML déjà construit (formules
-  // comprises, qu'elle laisse intactes). Sans langue choisie, elle ne fait rien.
-  if (langueActive()) {
-    traduireAffichage(document.getElementById('topbar'));
-    traduireAffichage(el);
-  }
 }
 
 // Liens internes : navigation sans rechargement.
