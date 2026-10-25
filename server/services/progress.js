@@ -115,7 +115,7 @@ function createProgressService({ repos, content, chapters, exercises = null, ser
     // ici aussi, sans quoi un élève pourrait valider le chapitre 5 en janvier
     // en appelant l'API directement. Les exercices libres y échappent — c'est
     // précisément leur raison d'être.
-    if (user.role !== 'teacher' && mode !== 'libre') {
+    if (user.role !== 'teacher' && mode !== 'libre' && !chapters.estSeance?.(ch.kind)) {
       const etat = levelState(user, ch.level, indexProgress(repos.progress.listForUser(user.id))).find((s) => s.chapterId === ch.id);
       if (etat && !etat.unlocked) {
         throw new ProgressError('Ce chapitre se débloquera quand tu auras terminé le précédent', 403);
@@ -167,8 +167,15 @@ function createProgressService({ repos, content, chapters, exercises = null, ser
     chapterProgress(user, chapterId) {
       const ch = chapterOf(user, chapterId);
       if (!ch) throw new ProgressError('Chapitre introuvable', 404);
-      const all = levelState(user, ch.level, indexProgress(repos.progress.listForUser(user.id)));
-      return all.find((s) => s.chapterId === chapterId);
+      const idx = indexProgress(repos.progress.listForUser(user.id));
+      // Une séance n'appartient pas au parcours : elle n'a pas de rang, donc
+      // pas de verrou, et son avancement se lit seul.
+      if (chapters.estSeance?.(ch.kind)) {
+        const st = chapterState(ch, idx.get(ch.id));
+        st.unlocked = true;
+        return st;
+      }
+      return levelState(user, ch.level, idx).find((s) => s.chapterId === chapterId);
     },
 
     // Ouverture d'une étape (cours, animation ou exercice) : met à jour « où j'en suis ».
@@ -404,8 +411,7 @@ function createProgressService({ repos, content, chapters, exercises = null, ser
           return {
             id: s.id,
             displayName: s.display_name,
-            firstName: s.first_name || '',
-            lastName: s.last_name || '',
+            pseudonym: s.display_name,
             username: s.username,
             active: !!s.active,
             lastLoginAt: s.last_login_at,

@@ -36,7 +36,7 @@ test('mise en place : une élève de 6e qui termine son premier chapitre', async
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   classId = (await prof.post('/teacher/classes', { name: '6e A', level: '6e' })).body.class.id;
   await prof.post(`/teacher/classes/${classId}/students`, {
-    students: [{ firstName: 'Léa', lastName: 'Martin', username: 'lea', password: 'soleil42' }],
+    students: [{ pseudonym: 'Loutre curieuse', username: 'lea', password: 'soleil42' }],
   });
 
   const eleve = await login(client(), 'lea', 'soleil42');

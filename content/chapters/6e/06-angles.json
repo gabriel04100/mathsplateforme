@@ -1,0 +1,81 @@
+{
+  "id": "6e-angles",
+  "level": "6e",
+  "order": 6,
+  "title": "Angles",
+  "theme": "Grandeurs et mesures",
+  "summary": "Reconnaître, nommer, mesurer et construire un angle avec un rapporteur.",
+  "steps": [
+    {
+      "id": "cours",
+      "type": "lesson",
+      "title": "Le cours",
+      "blocks": [
+        {
+          "type": "definition",
+          "title": "Angle, sommet, côtés",
+          "html": "Un <strong>angle</strong> est la portion de plan délimitée par deux demi-droites de même origine.<br>Cette origine est le <strong>sommet</strong> de l'angle, les deux demi-droites sont ses <strong>côtés</strong>.<br>Si les côtés sont $[OA)$ et $[OB)$, l'angle se note $\\widehat{AOB}$ ou $\\widehat{BOA}$ : <strong>la lettre du sommet est toujours au milieu</strong>."
+        },
+        {
+          "type": "text",
+          "title": "L'unité de mesure : le degré",
+          "html": "La mesure d'un angle s'exprime en <strong>degrés</strong>, notés $°$. Elle dit <em>de combien les deux côtés sont écartés</em> — et non pas s'ils sont longs : on peut prolonger les côtés autant qu'on veut, l'angle ne change pas.<br>Un demi-tour complet vaut $180°$, un quart de tour vaut $90°$."
+        },
+        {
+          "type": "definition",
+          "title": "Les quatre natures d'angle",
+          "html": "<ul><li>angle <strong>nul</strong> : $0°$ (les côtés sont confondus) ;</li><li>angle <strong>aigu</strong> : entre $0°$ et $90°$ — plus fermé qu'un angle droit ;</li><li>angle <strong>droit</strong> : exactement $90°$ ;</li><li>angle <strong>obtus</strong> : entre $90°$ et $180°$ — plus ouvert qu'un angle droit ;</li><li>angle <strong>plat</strong> : $180°$ (les côtés forment une droite).</li></ul>Pour trancher sans rapporteur, compare l'ouverture à celle d'un coin de feuille : c'est un angle droit."
+        },
+        {
+          "type": "method",
+          "title": "Mesurer un angle au rapporteur",
+          "html": "<ol><li>Je place le <strong>centre</strong> du rapporteur sur le <strong>sommet</strong> de l'angle.</li><li>J'aligne la <strong>ligne du 0</strong> sur un côté de l'angle.</li><li>Je lis la mesure sur l'<strong>autre côté</strong>, en partant du $0$.</li></ol>"
+        },
+        {
+          "type": "method",
+          "title": "Construire un angle au rapporteur",
+          "html": "<ol><li>Je trace un <strong>premier côté</strong> : une demi-droite dont l'origine est le sommet.</li><li>Je place le centre du rapporteur sur le sommet et la ligne du $0$ sur ce côté.</li><li>En partant du $0$, je repère la mesure voulue et je <strong>marque un point</strong> au bord du rapporteur.</li><li>Je retire le rapporteur et je trace le <strong>deuxième côté</strong> à la règle, du sommet jusqu'au point.</li></ol>"
+        },
+        {
+          "type": "remark",
+          "title": "Le piège des deux graduations",
+          "html": "Le rapporteur porte <strong>deux graduations</strong> de $0$ à $180$, l'une qui part de la gauche, l'autre de la droite. L'erreur la plus fréquente est de lire sur la mauvaise : on trouve alors $180 - a$ au lieu de $a$.<br><strong>La règle :</strong> on repère le $0$ qui est posé sur le côté de l'angle, et on compte sur <em>cette</em> graduation-là.<br>Et on vérifie toujours : un angle visiblement aigu ne peut pas mesurer $130°$."
+        }
+      ]
+    },
+    {
+      "id": "anim-mesurer",
+      "type": "animation",
+      "title": "Mesurer un angle, pas à pas",
+      "intro": "Suis les étapes : le rapporteur se place, le 0 se pose sur un côté, puis la mesure se compte depuis ce 0. Change d'angle autant de fois que tu veux, puis passe en mode « À toi de lire ».",
+      "widget": "mesurer-angle",
+      "params": { "angle": 52, "rotation": 14, "inner": true }
+    },
+    {
+      "id": "anim-construire",
+      "type": "animation",
+      "title": "Construire un angle, pas à pas",
+      "intro": "Même rapporteur, geste inverse : on connaît la mesure et on cherche le deuxième côté. En mode « À toi de construire », c'est toi qui places le point au bord du rapporteur.",
+      "widget": "construire-angle",
+      "params": { "angle": 65, "rotation": 12, "inner": true }
+    },
+    {
+      "id": "ex-reconnaitre",
+      "type": "exercise",
+      "title": "Aigu, droit ou obtus ?",
+      "instructions": "Regarde la figure et compare l'ouverture de l'angle à celle d'un angle droit.",
+      "generator": "ang-reconnaitre",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "ex-nature",
+      "type": "exercise",
+      "title": "La nature d'après la mesure",
+      "instructions": "La mesure est donnée : compare-la à 90° et à 180°.",
+      "generator": "ang-nature",
+      "count": 6,
+      "pass": 5
+    }
+  ]
+}

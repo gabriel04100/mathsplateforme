@@ -72,7 +72,7 @@ test('mise en place : une classe de 3e avec une élève', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   classId = (await prof.post('/teacher/classes', { name: '3e A', level: '3e' })).body.class.id;
   assert.equal(
-    (await prof.post(`/teacher/classes/${classId}/students`, { students: [{ firstName: 'Nina', lastName: 'Dubois', username: 'nina', password: 'soleil42' }] }))
+    (await prof.post(`/teacher/classes/${classId}/students`, { students: [{ pseudonym: 'Mésange polie', username: 'nina', password: 'soleil42' }] }))
       .status,
     201
   );

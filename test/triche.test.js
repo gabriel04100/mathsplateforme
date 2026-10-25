@@ -25,7 +25,7 @@ before(async () => {
   const prof = await login(makeClient(base = `http://127.0.0.1:${(server = built.app.listen(0)).address().port}/api`), 'prof', 'motdepasse-prof');
   const classId = (await prof.post('/teacher/classes', { name: '6e A', level: '6e' })).body.class.id;
   await prof.post(`/teacher/classes/${classId}/students`, {
-    students: [{ firstName: 'Léa', lastName: 'Martin', username: 'lea', password: 'soleil42' }],
+    students: [{ pseudonym: 'Loutre curieuse', username: 'lea', password: 'soleil42' }],
   });
 
   const eleve = await login(makeClient(base), 'lea', 'soleil42');
@@ -94,7 +94,7 @@ test('un jeton inventé, volé ou périmé est refusé', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   const classes = (await prof.get('/teacher/classes')).body.classes;
   await prof.post(`/teacher/classes/${classes[0].id}/students`, {
-    students: [{ firstName: 'Tom', lastName: 'Leroy', username: 'tom', password: 'soleil42' }],
+    students: [{ pseudonym: 'Castor intrépide', username: 'tom', password: 'soleil42' }],
   });
   const tom = await login(client(), 'tom', 'soleil42');
   const sien = await tom.post('/progress/start', { chapterId: CHAPITRE, stepId: step.id });

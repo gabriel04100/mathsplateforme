@@ -15,6 +15,16 @@ export const rand = (a, b) => a + Math.floor(random() * (b - a + 1));
 const pick = (arr) => arr[Math.floor(random() * arr.length)];
 const sign = () => (random() < 0.5 ? -1 : 1);
 const nz = (a, b) => { let v = 0; while (v === 0) v = rand(a, b); return v; };
+// Mélange (Fisher-Yates) tiré de `random()`, comme tout le reste : une graine
+// donnée doit redonner exactement la même question, options comprises.
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 // Nombre → LaTeX à la française (virgule décimale).
 export const tex = (x) => String(+x.toFixed(10)).replace('.', '{,}');
@@ -549,9 +559,194 @@ function affCoeff() {
   };
 }
 
+
+// ---------- 6e : encadrer, intercaler, arrondir ----------
+// Trois gestes différents sur la même droite graduée, et trois confusions à
+// éviter : encadrer n'est pas arrondir (on ne choisit pas le plus proche, on
+// donne les deux voisins), arrondir n'est pas tronquer, et entre deux décimaux
+// il y a toujours de la place.
+
+const RANGS = [
+  { nom: "à l'unité", adj: 'entiers', dec: 0, pas: 'une unité' },
+  { nom: 'au dixième', adj: 'dixièmes', dec: 1, pas: 'un dixième' },
+  { nom: 'au centième', adj: 'centièmes', dec: 2, pas: 'un centième' },
+];
+
+// Un décimal tiré au sort avec exactement `dec + 2` chiffres après la virgule,
+// le dernier non nul. Deux chiffres de rab : la décision ne tombe jamais pile
+// sur un demi, donc l'arrondi n'a jamais deux réponses défendables.
+function decimalPour(dec) {
+  const chiffres = [];
+  for (let i = 0; i < dec + 2; i++) chiffres.push(rand(0, 9));
+  if (chiffres[chiffres.length - 1] === 0) chiffres[chiffres.length - 1] = rand(1, 9);
+  const entier = rand(1, 9) * (dec === 0 ? rand(1, 9) : 1); // des unités, parfois des dizaines
+  const valeur = Number(`${entier}.${chiffres.join('')}`);
+  return { valeur, entier, chiffres };
+}
+
+const puis = (n) => 10 ** n;
+// Arrondi et troncature calculés sur des entiers : pas de surprise flottante.
+const tronque = (x, dec) => Math.floor(Math.round(x * puis(dec + 3)) / puis(3)) / puis(dec);
+const arrondi = (x, dec) => Math.round(Math.round(x * puis(dec + 3)) / puis(3)) / puis(dec);
+
+function decEncadrer() {
+  const rang = pick(RANGS);
+  const { valeur } = decimalPour(rang.dec);
+  const bas = tronque(valeur, rang.dec);
+  const haut = +(bas + 1 / puis(rang.dec)).toFixed(rang.dec);
+  const pas = 1 / puis(rang.dec);
+  const cadre = (a, b) => `$${tex(a)} < ${tex(valeur)} < ${tex(b)}$`;
+
+  // Les pièges, dans l'ordre : un encadrement décalé d'un cran (il ne contient
+  // pas le nombre), un encadrement au rang du dessus (trop large) et un au rang
+  // du dessous (vrai, mais ce ne sont pas les voisins demandés — c'est l'erreur
+  // de lecture de la consigne).
+  const voisins = (d) => {
+    const b = tronque(valeur, d);
+    return cadre(b, +(b + 1 / puis(d)).toFixed(d));
+  };
+  const options = [
+    cadre(bas, haut),
+    cadre(+(bas + pas).toFixed(rang.dec), +(haut + pas).toFixed(rang.dec)),
+    voisins(Math.max(0, rang.dec - 1)),
+    voisins(rang.dec + 1),
+  ];
+  // On ne garde qu'une fois chaque proposition : au rang de l'unité, « le rang
+  // du dessus » est le même que la bonne réponse.
+  const uniques = options.filter((o, i) => options.indexOf(o) === i);
+  const melange = shuffle(uniques);
+  return {
+    prompt: `Encadre $${tex(valeur)}$ par deux ${rang.adj} consécutifs.`,
+    input: { kind: 'choice', options: melange },
+    check: choiceCheck(melange.indexOf(options[0])),
+    solution: `On garde les chiffres jusqu'au rang demandé : $${tex(bas)}$. Le voisin suivant est $${tex(bas)} + ${tex(pas)} = ${tex(haut)}$.<br>
+      Donc $${tex(bas)} < ${tex(valeur)} < ${tex(haut)}$. Attention : encadrer, ce n'est pas arrondir — on ne cherche pas le plus proche, mais les <strong>deux voisins</strong>.`,
+  };
+}
+
+function decIntercaler() {
+  const rang = pick(RANGS.slice(0, 2)); // à l'unité ou au dixième : il reste de la place à voir
+  const bas = rang.dec === 0 ? rand(1, 20) : +(rand(10, 90) / 10).toFixed(1);
+  const haut = +(bas + 1 / puis(rang.dec)).toFixed(rang.dec);
+  const milieu = +((bas + haut) / 2).toFixed(rang.dec + 1);
+  return {
+    prompt: `Donne un nombre décimal strictement compris entre $${tex(bas)}$ et $${tex(haut)}$.`,
+    input: { kind: 'number' },
+    // Toute réponse dans l'intervalle ouvert convient : c'est bien le propos.
+    // `expected` retient le milieu, qui sert de réponse type dans les corrigés.
+    check: withExpected((ans) => {
+      const v = parseNumber(ans);
+      if (v === null) return { ok: false, message: 'Écris un nombre (avec une virgule si besoin).' };
+      if (v <= bas || v >= haut) return { ok: false, message: `Il faut être strictement entre $${tex(bas)}$ et $${tex(haut)}$.` };
+      return { ok: true };
+    }, milieu),
+    solution: `Il suffit d'ajouter un chiffre après la virgule : $${tex(milieu)}$ convient, et $${tex(bas)} < ${tex(milieu)} < ${tex(haut)}$.<br>
+      Entre deux décimaux, il y a toujours de la place — et même une infinité de nombres.`,
+  };
+}
+
+function decArrondir() {
+  const rang = pick(RANGS);
+  const { valeur } = decimalPour(rang.dec);
+  const bas = tronque(valeur, rang.dec);
+  const pas = 1 / puis(rang.dec);
+  const haut = +(bas + pas).toFixed(rang.dec);
+  const reponse = arrondi(valeur, rang.dec);
+  const milieu = +((bas + haut) / 2).toFixed(rang.dec + 1);
+  return {
+    prompt: `Arrondis $${tex(valeur)}$ ${rang.nom}.`,
+    input: { kind: 'number' },
+    check: numberCheck(reponse),
+    solution: `On encadre d'abord : $${tex(bas)} < ${tex(valeur)} < ${tex(haut)}$. Le milieu est $${tex(milieu)}$.<br>
+      Comme $${tex(valeur)}$ est ${valeur < milieu ? 'avant' : 'après'} le milieu, le plus proche est $${tex(reponse)}$.`,
+  };
+}
+
+
+// ---------- 6e : angles ----------
+// On nomme la nature d'un angle en le comparant à l'angle droit. Deux entrées :
+// depuis une mesure (on compare des nombres) et depuis un dessin (on compare
+// des formes). La deuxième est la plus difficile, et la plus utile.
+
+const NATURES = ['aigu', 'droit', 'obtus', 'plat'];
+const natureDe = (a) => (a === 180 ? 'plat' : a === 90 ? 'droit' : a < 90 ? 'aigu' : 'obtus');
+
+// Un angle dessiné, incliné au hasard : un élève qui n'a vu que des angles
+// posés à plat ne reconnaît rien dès qu'on tourne la figure.
+function angleFigure(noms, a, rot) {
+  const [A, V, B] = noms;
+  const O = { x: 132, y: 112 };
+  const L = 100;
+  const pt = (d, r) => ({ x: O.x + r * Math.cos((d * Math.PI) / 180), y: O.y - r * Math.sin((d * Math.PI) / 180) });
+  const pA = pt(rot, L);
+  const pB = pt(rot + a, L);
+  const lA = pt(rot, L + 16);
+  const lB = pt(rot + a, L + 16);
+  const rArc = 30;
+  const aArc = pt(rot, rArc);
+  const bArc = pt(rot + a, rArc);
+  const arc = `M ${aArc.x.toFixed(1)} ${aArc.y.toFixed(1)} A ${rArc} ${rArc} 0 0 0 ${bArc.x.toFixed(1)} ${bArc.y.toFixed(1)}`;
+  const cote = (p) => `<line x1="${O.x}" y1="${O.y}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>`;
+  return `<svg class="figure" viewBox="0 0 264 170" role="img" aria-label="Angle ${A}${V}${B}">
+    <path d="${arc}" fill="none" stroke="var(--blue)" stroke-width="2"/>
+    ${cote(pA)}
+    ${cote(pB)}
+    <circle cx="${O.x}" cy="${O.y}" r="3" fill="var(--ink)"/>
+    <text x="${lA.x.toFixed(1)}" y="${lA.y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" class="fig-pt">${A}</text>
+    <text x="${lB.x.toFixed(1)}" y="${lB.y.toFixed(1)}" text-anchor="middle" dominant-baseline="central" class="fig-pt">${B}</text>
+    <text x="${(O.x - 16).toFixed(1)}" y="${(O.y + 18).toFixed(1)}" class="fig-pt">${V}</text>
+  </svg>`;
+}
+
+function angNature() {
+  // Les cas particuliers (droit, plat) doivent revenir, mais pas une fois sur
+  // deux : l'essentiel du travail est la comparaison à 90°.
+  const r = random();
+  const a = r < 0.4 ? rand(5, 89) : r < 0.8 ? rand(91, 179) : r < 0.9 ? 90 : 180;
+  const nature = natureDe(a);
+  const [A, V, B] = pick(LETTERS).split('');
+  return {
+    prompt: `L'angle $\\widehat{${A}${V}${B}}$ mesure $${a}°$. Quelle est sa nature ?`,
+    input: { kind: 'choice', options: NATURES },
+    check: choiceCheck(NATURES.indexOf(nature)),
+    solution:
+      a === 180
+        ? `Un angle de $180°$ est un angle <strong>plat</strong> : ses deux côtés forment une droite.`
+        : a === 90
+          ? `Un angle de $90°$ est un angle <strong>droit</strong>.`
+          : `On compare à $90°$ : comme $${a} ${a < 90 ? '<' : '>'} 90$, l'angle est <strong>${nature}</strong>.`,
+  };
+}
+
+function angReconnaitre() {
+  // Sur un dessin, la zone 81°–99° n'est pas décidable à l'œil : on l'écarte,
+  // sauf l'angle droit exact, qu'il faut justement apprendre à reconnaître.
+  const r = random();
+  const a = r < 0.42 ? rand(18, 80) : r < 0.84 ? rand(100, 165) : 90;
+  const nature = natureDe(a);
+  const noms = pick(LETTERS).split('');
+  const options = ['aigu', 'droit', 'obtus'];
+  const rot = rand(-25, 55);
+  return {
+    prompt: `Quelle est la nature de l'angle $\\widehat{${noms[0]}${noms[1]}${noms[2]}}$ ci-dessous ?`,
+    // Ici deux questions ne se distinguent pas par leur énoncé mais par leur
+    // dessin : c'est la figure qui dit si la série se répète.
+    key: `ang-reco-${a}-${rot}-${noms.join('')}`,
+    figure: angleFigure(noms, a, rot),
+    input: { kind: 'choice', options },
+    check: choiceCheck(options.indexOf(nature)),
+    solution: `Cet angle mesure $${a}°$ : il est <strong>${nature}</strong>. Pour trancher sans rapporteur, compare l'ouverture à celle d'un coin de feuille, qui est un angle droit.`,
+  };
+}
+
 export const GENERATORS = {
   'dec-place-value': decPlaceValue,
   'dec-compare': decCompare,
+  'dec-encadrer': decEncadrer,
+  'dec-intercaler': decIntercaler,
+  'dec-arrondir': decArrondir,
+  'ang-nature': angNature,
+  'ang-reconnaitre': angReconnaitre,
   'frac-of-quantity': fracOfQuantity,
   'frac-equivalent': fracEquivalent,
   'prio-calc': prioCalc,

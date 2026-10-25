@@ -47,7 +47,7 @@ test('mise en place : une classe de 6e et son élève', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   const classId = (await prof.post('/teacher/classes', { name: '6e A', level: '6e' })).body.class.id;
   const created = await prof.post(`/teacher/classes/${classId}/students`, {
-    students: [{ firstName: 'Tom', lastName: 'Leroy', username: 'tom', password: 'soleil42' }],
+    students: [{ pseudonym: 'Castor intrépide', username: 'tom', password: 'soleil42' }],
   });
   assert.equal(created.status, 201);
 });

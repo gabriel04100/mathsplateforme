@@ -7,16 +7,18 @@ function createRepositories(db) {
     findById: (id) => db.prepare('SELECT * FROM users WHERE id = ?').get(id),
     findByUsername: (username) => db.prepare('SELECT * FROM users WHERE username = ?').get(username),
     countTeachers: () => db.prepare("SELECT COUNT(*) AS n FROM users WHERE role = 'teacher'").get().n,
-    create: ({ username, passwordHash, role, displayName, classId = null, firstName = null, lastName = null }) => {
+    // display_name : le nom affiché. Pour un élève, c'est son pseudonyme — la
+    // plateforme ne stocke aucune donnée nominative (voir migration 011).
+    create: ({ username, passwordHash, role, displayName, classId = null }) => {
       const r = db
-        .prepare('INSERT INTO users (username, password_hash, role, display_name, class_id, first_name, last_name) VALUES (?, ?, ?, ?, ?, ?, ?)')
-        .run(username, passwordHash, role, displayName, classId, firstName, lastName);
+        .prepare('INSERT INTO users (username, password_hash, role, display_name, class_id) VALUES (?, ?, ?, ?, ?)')
+        .run(username, passwordHash, role, displayName, classId);
       return Number(r.lastInsertRowid);
     },
     update: (id, fields) => {
       const map = {
         displayName: 'display_name', passwordHash: 'password_hash', classId: 'class_id',
-        active: 'active', username: 'username', firstName: 'first_name', lastName: 'last_name',
+        active: 'active', username: 'username',
       };
       const sets = [];
       const vals = [];
@@ -31,14 +33,15 @@ function createRepositories(db) {
     },
     touchLogin: (id) => db.prepare("UPDATE users SET last_login_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?").run(id),
     remove: (id) => db.prepare('DELETE FROM users WHERE id = ?').run(id),
-    // Tri par nom de famille puis prénom, comme une liste d'appel.
+    // Tri alphabétique des pseudonymes : c'est le seul ordre que la plateforme
+    // puisse produire, et il suffit — l'enseignant garde sa liste d'appel.
     listByClass: (classId) =>
       db
-        .prepare(
-          `SELECT * FROM users WHERE class_id = ? AND role = 'student'
-           ORDER BY COALESCE(NULLIF(last_name, ''), display_name) COLLATE NOCASE, first_name COLLATE NOCASE`
-        )
+        .prepare(`SELECT * FROM users WHERE class_id = ? AND role = 'student' ORDER BY display_name COLLATE NOCASE`)
         .all(classId),
+
+    // Pseudonymes et noms déjà utilisés : sert à en tirer un qui soit libre.
+    displayNamesTaken: () => new Set(db.prepare('SELECT display_name FROM users').all().map((r) => r.display_name)),
   };
 
   const classes = {
@@ -288,49 +291,54 @@ function createRepositories(db) {
   };
 
   // Chapitres écrits par l'enseignant : ils s'ajoutent au parcours de ses classes.
+  // Filtre sur la typologie : 'chapitre' pour le parcours, 'seance' pour les
+  // activités et feuilles d'exercices hors parcours, rien pour les deux.
+  const filtreKind = (prefixe, kind) =>
+    kind === 'chapitre' ? `AND ${prefixe}kind = 'chapitre'` : kind === 'seance' ? `AND ${prefixe}kind <> 'chapitre'` : '';
+
   const customChapters = {
     findById: (id) => db.prepare('SELECT * FROM custom_chapters WHERE id = ?').get(id),
-    listByTeacher: (teacherId, { archived = 0 } = {}) =>
+    listByTeacher: (teacherId, { archived = 0, kind } = {}) =>
       db
         .prepare(
           `SELECT ch.*, c.name AS class_name
            FROM custom_chapters ch LEFT JOIN classes c ON c.id = ch.class_id
-           WHERE ch.teacher_id = ? AND ch.archived = ?
+           WHERE ch.teacher_id = ? AND ch.archived = ? ${filtreKind('ch.', kind)}
            ORDER BY ch.level, ch.position, ch.updated_at DESC`
         )
         .all(teacherId, archived ? 1 : 0),
     // Ce qu'une classe voit : publiés, non archivés, de son enseignant,
     // et destinés soit à toutes ses classes, soit à la sienne.
-    listForClass: (classId, level) =>
+    listForClass: (classId, level, { kind } = {}) =>
       db
         .prepare(
           `SELECT ch.* FROM custom_chapters ch
            JOIN classes c ON c.id = ?
            WHERE ch.status = 'published' AND ch.archived = 0 AND ch.teacher_id = c.teacher_id
-             AND ch.level = ? AND (ch.class_id IS NULL OR ch.class_id = c.id)
+             AND ch.level = ? AND (ch.class_id IS NULL OR ch.class_id = c.id) ${filtreKind('ch.', kind)}
            ORDER BY ch.position, ch.id`
         )
         .all(classId, level),
-    listByTeacherAndLevel: (teacherId, level) =>
+    listByTeacherAndLevel: (teacherId, level, { kind } = {}) =>
       db
         .prepare(
-          `SELECT * FROM custom_chapters WHERE teacher_id = ? AND level = ? AND archived = 0
+          `SELECT * FROM custom_chapters WHERE teacher_id = ? AND level = ? AND archived = 0 ${filtreKind('', kind)}
            ORDER BY position, id`
         )
         .all(teacherId, level),
-    create: ({ teacherId, level, title, summary, position, steps, status, classId }) =>
+    create: ({ teacherId, level, title, summary, position, steps, status, classId, kind = 'chapitre' }) =>
       Number(
         db
           .prepare(
-            `INSERT INTO custom_chapters (teacher_id, level, title, summary, position, steps, status, class_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+            `INSERT INTO custom_chapters (teacher_id, level, title, summary, position, steps, status, class_id, kind)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
           )
-          .run(teacherId, level, title, summary, position, steps, status, classId ?? null).lastInsertRowid
+          .run(teacherId, level, title, summary, position, steps, status, classId ?? null, kind).lastInsertRowid
       ),
     update: (id, fields) => {
       const map = {
         level: 'level', title: 'title', summary: 'summary', position: 'position',
-        steps: 'steps', status: 'status', archived: 'archived', classId: 'class_id',
+        steps: 'steps', status: 'status', archived: 'archived', classId: 'class_id', kind: 'kind',
       };
       const sets = [];
       const vals = [];
@@ -345,6 +353,22 @@ function createRepositories(db) {
       db.prepare(`UPDATE custom_chapters SET ${sets.join(', ')} WHERE id = ?`).run(...vals, id);
     },
     remove: (id) => db.prepare('DELETE FROM custom_chapters WHERE id = ?').run(id),
+  };
+
+  // Cache des traductions : un texte source, une langue, une traduction.
+  const translations = {
+    getMany: (target, hashes) => {
+      if (!hashes.length) return new Map();
+      const trous = hashes.map(() => '?').join(',');
+      const rows = db.prepare(`SELECT source_hash, translated FROM translations WHERE target = ? AND source_hash IN (${trous})`).all(target, ...hashes);
+      return new Map(rows.map((r) => [r.source_hash, r.translated]));
+    },
+    saveMany: (target, entrees) => {
+      const ins = db.prepare('INSERT OR REPLACE INTO translations (target, source_hash, source, translated) VALUES (?, ?, ?, ?)');
+      db.transaction(() => {
+        for (const e of entrees) ins.run(target, e.sourceHash, e.source, e.translated);
+      })();
+    },
   };
 
   // « Ma version » d'un chapitre livré dans content/ : déplacé, masqué ou réécrit.
@@ -479,7 +503,7 @@ function createRepositories(db) {
 
   return {
     users, classes, sessions, progress, attempts, questionResults, confidence, exerciseSessions, positions,
-    customExercises, customChapters, chapterOverrides, documents, gameScores,
+    customExercises, customChapters, chapterOverrides, documents, gameScores, translations,
     transaction: (fn) => db.transaction(fn)(),
   };
 }

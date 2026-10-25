@@ -35,6 +35,16 @@
           "type": "remark",
           "title": "Droite graduée",
           "html": "Sur une droite graduée, plus un nombre est grand, plus il est placé à droite. Entre deux graduations consécutives, on peut toujours zoomer pour trouver d'autres nombres décimaux."
+        },
+        {
+          "type": "method",
+          "title": "Encadrer, intercaler, arrondir",
+          "html": "Trois gestes différents, au même endroit : entre deux graduations voisines.<br><strong>Encadrer</strong> $7{,}384$ au dixième, c'est donner ses <strong>deux voisins</strong> : $7{,}3 < 7{,}384 < 7{,}4$. On ne choisit pas, on donne les deux.<br><strong>Intercaler</strong> un nombre entre $7{,}3$ et $7{,}4$, c'est en trouver un strictement entre les deux : $7{,}35$ convient. Il suffit d'ajouter un chiffre après la virgule — et il y en a une infinité.<br><strong>Arrondir</strong> $7{,}384$ au dixième, c'est garder celui des deux voisins qui est <strong>le plus proche</strong> : on compare au milieu $7{,}35$. Comme $7{,}384 > 7{,}35$, l'arrondi est $7{,}4$."
+        },
+        {
+          "type": "remark",
+          "title": "Arrondir n’est pas effacer les chiffres",
+          "html": "Effacer les chiffres qui dépassent, c'est <strong>tronquer</strong> : $7{,}384$ tronqué au dixième donne $7{,}3$. Mais son <strong>arrondi</strong> au dixième est $7{,}4$, parce que $7{,}384$ est plus proche de $7{,}4$. Tronquer donne toujours le voisin de gauche ; arrondir regarde le milieu."
         }
       ]
     },
@@ -44,7 +54,32 @@
       "title": "Zoomer sur la droite graduée",
       "intro": "Clique sur un intervalle pour zoomer. Observe comment chaque zoom fait apparaître dix fois plus de graduations.",
       "widget": "number-line-zoom",
-      "params": { "start": 0, "end": 10, "target": 3.47 }
+      "params": {
+        "start": 0,
+        "end": 10,
+        "target": 3.47
+      }
+    },
+    {
+      "id": "anim-encadrer",
+      "type": "animation",
+      "title": "Jeu : encadrer un décimal",
+      "intro": "La droite est graduée au rang demandé. Clique sur le segment qui contient le nombre — pas sur une graduation : encadrer, c'est désigner un intervalle.",
+      "widget": "encadrer-decimal"
+    },
+    {
+      "id": "anim-intercaler",
+      "type": "animation",
+      "title": "Jeu : intercaler un décimal",
+      "intro": "On a zoomé entre deux voisins : il y a dix fois plus de graduations. Place un nombre strictement entre les deux, et recommence — il reste toujours de la place.",
+      "widget": "intercaler-decimal"
+    },
+    {
+      "id": "anim-arrondir",
+      "type": "animation",
+      "title": "Jeu : arrondir un décimal",
+      "intro": "Le milieu entre les deux graduations est tracé en pointillés. Choisis la graduation la plus proche : la bille roule jusqu'à elle si tu as raison.",
+      "widget": "arrondir-decimal"
     },
     {
       "id": "ex-chiffres",
@@ -63,6 +98,40 @@
       "generator": "dec-compare",
       "count": 8,
       "pass": 6
+    },
+    {
+      "id": "ex-encadrer",
+      "type": "exercise",
+      "title": "Encadrer",
+      "instructions": "Donne les deux voisins au rang demandé. Attention : on ne cherche pas le plus proche.",
+      "generator": "dec-encadrer",
+      "count": 5,
+      "pass": 4
+    },
+    {
+      "id": "ex-intercaler",
+      "type": "exercise",
+      "title": "Intercaler",
+      "instructions": "Trouve un nombre strictement compris entre les deux. Plusieurs réponses sont justes.",
+      "generator": "dec-intercaler",
+      "count": 5,
+      "pass": 4
+    },
+    {
+      "id": "ex-arrondir",
+      "type": "exercise",
+      "title": "Arrondir",
+      "instructions": "Encadre d'abord, puis regarde de quel côté du milieu se trouve le nombre.",
+      "generator": "dec-arrondir",
+      "count": 6,
+      "pass": 5
+    },
+    {
+      "id": "anim-defi",
+      "type": "animation",
+      "title": "Défi : les trois gestes mélangés",
+      "intro": "Dix questions tirées au sort parmi les trois jeux. Trois bonnes réponses d'affilée : bonus de points.",
+      "widget": "defi-decimaux"
     }
   ]
 }

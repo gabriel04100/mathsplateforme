@@ -18,6 +18,24 @@ module.exports = function learningRoutes({ content, progress, exercises, chapter
     res.json({ levels: chapters.catalogFor(req.user) });
   });
 
+  // Les séances : activités et feuilles d'exercices posées à côté du parcours.
+  // Elles ne verrouillent rien et ne sont jamais verrouillées.
+  r.get('/seances', (req, res) => {
+    const seances = chapters.seancesForUser(req.user).map((s) => ({
+      id: s.id,
+      kind: s.kind,
+      kindLabel: chapters.LIBELLE_KIND[s.kind] || s.kind,
+      level: s.level,
+      title: s.title,
+      summary: s.summary,
+      status: s.status,
+      updatedAt: s.updatedAt,
+      steps: s.steps.map((e) => ({ id: e.id, type: e.type, title: e.title, ...(e.type === 'exercise' ? { count: e.count, pass: e.pass } : {}) })),
+      progress: progress.chapterProgress(req.user, s.id),
+    }));
+    res.json({ seances });
+  });
+
   r.get('/levels/:levelId', (req, res) => {
     const level = content.level(req.params.levelId);
     if (!level) return res.status(404).json({ error: 'Niveau inconnu' });

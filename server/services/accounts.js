@@ -1,5 +1,10 @@
 // Gestion des classes et des comptes élèves par l'enseignant.
+//
+// Un compte élève = un identifiant de connexion + un pseudonyme. Aucune donnée
+// nominative : le lien pseudonyme ↔ élève est tenu par l'enseignant en dehors
+// de la plateforme (voir server/services/pseudonyms.js et la migration 011).
 const crypto = require('node:crypto');
+const { genererPseudonyme, nettoyerPseudonyme } = require('./pseudonyms');
 
 class AccountError extends Error {
   constructor(message, status = 400) {
@@ -15,8 +20,6 @@ const WORDS = [
   'banane', 'koala', 'cerise', 'galet', 'hibou', 'jungle', 'loutre', 'mangue', 'navire', 'olive', 'phare', 'renard',
 ];
 const USERNAME_RE = /^[a-z0-9._-]{3,40}$/;
-// Lettres (accentuées), espaces, apostrophes, points et traits d'union : rejette chiffres, symboles, emojis…
-const NAME_RE = /^[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'’.\- ]{0,58}[A-Za-zÀ-ÖØ-öø-ÿ])?$/;
 const MAX_PASSWORD_LENGTH = 72; // bcrypt tronque silencieusement au-delà
 
 function generatePassword() {
@@ -39,28 +42,19 @@ function currentSchoolYear(d = new Date()) {
   return d.getMonth() >= 7 ? `${y}-${y + 1}` : `${y - 1}-${y}`; // bascule en août
 }
 
-function cleanDisplayName(raw, label, what = "nom de l'élève") {
-  const displayName = String(raw || '').trim().replace(/\s+/g, ' ');
-  if (!displayName) throw new AccountError(`${label} : ${what} manquant`);
-  if (!NAME_RE.test(displayName)) throw new AccountError(`${label} : « ${displayName} » invalide (lettres, espaces, apostrophes et traits d'union uniquement, 60 caractères maximum)`);
-  return displayName;
-}
-
-// Une entrée de la liste d'élèves peut arriver en deux colonnes (prénom, nom)
-// ou, pour les imports anciens, en une seule (« Prénom Nom »).
-function readName(entry, label) {
-  const hasParts = entry.firstName !== undefined || entry.lastName !== undefined;
-  if (hasParts) {
-    const firstName = cleanDisplayName(entry.firstName, label, 'prénom');
-    const rawLast = String(entry.lastName ?? '').trim().replace(/\s+/g, ' ');
-    const lastName = rawLast ? cleanDisplayName(rawLast, label, 'nom') : '';
-    return { firstName, lastName, displayName: lastName ? `${firstName} ${lastName}` : firstName };
+// Pseudonyme d'une entrée : celui que l'enseignant a saisi, ou un tirage.
+// `pris` contient les pseudonymes déjà en base et ceux du lot en cours.
+function readPseudonym(entry, label, pris) {
+  const brut = entry.pseudonym ?? entry.displayName;
+  if (brut === undefined || String(brut).trim() === '') return genererPseudonyme((n) => pris.has(n));
+  const nom = nettoyerPseudonyme(brut);
+  if (!nom) {
+    throw new AccountError(
+      `${label} : « ${String(brut).trim()} » n'est pas un pseudonyme valable (lettres, espaces et traits d'union, 2 à 40 caractères, pas de chiffre)`
+    );
   }
-  const displayName = cleanDisplayName(entry.displayName, label);
-  const cut = displayName.indexOf(' ');
-  return cut > 0
-    ? { firstName: displayName.slice(0, cut), lastName: displayName.slice(cut + 1), displayName }
-    : { firstName: displayName, lastName: '', displayName };
+  if (pris.has(nom)) throw new AccountError(`${label} : le pseudonyme « ${nom} » est déjà utilisé`, 409);
+  return nom;
 }
 
 function checkPasswordLength(password, label) {
@@ -96,12 +90,13 @@ function createAccountsService({ repos, auth, content }) {
     return candidate;
   }
 
+  // Ce qu'un élève expose : un pseudonyme, jamais un nom. `displayName` est
+  // conservé parce que tout l'affichage s'appuie dessus — c'est le pseudonyme.
   const publicStudent = (u) => ({
     id: u.id,
     username: u.username,
+    pseudonym: u.display_name,
     displayName: u.display_name,
-    firstName: u.first_name || '',
-    lastName: u.last_name || '',
     classId: u.class_id,
     active: !!u.active,
     lastLoginAt: u.last_login_at,
@@ -156,8 +151,12 @@ function createAccountsService({ repos, auth, content }) {
       return repos.users.listByClass(Number(classId)).map(publicStudent);
     },
 
-    // Création en lot. Chaque entrée : { displayName, username?, password? }.
-    // Les identifiants absents sont générés. Les mots de passe en clair ne sont renvoyés QU'UNE fois.
+    // Un pseudonyme libre, à proposer dans l'interface.
+    suggestPseudonym: () => genererPseudonyme((n) => repos.users.displayNamesTaken().has(n)),
+
+    // Création en lot. Chaque entrée : { pseudonym?, username?, password? }.
+    // Tout est facultatif : une entrée vide donne un compte entièrement tiré au
+    // sort. Les mots de passe en clair ne sont renvoyés QU'UNE fois.
     async createStudents(teacherId, classId, entries) {
       const cls = ownedClass(teacherId, classId);
       if (!Array.isArray(entries) || !entries.length) throw new AccountError('Aucun élève à créer');
@@ -165,20 +164,22 @@ function createAccountsService({ repos, auth, content }) {
 
       const prepared = [];
       const taken = new Set();
+      const pseudosPris = repos.users.displayNamesTaken();
       for (const [i, e] of entries.entries()) {
         const label = `Ligne ${i + 1}`;
-        const { firstName, lastName, displayName } = readName(e, label);
+        const pseudonym = readPseudonym(e, label, pseudosPris);
+        pseudosPris.add(pseudonym);
         let username = String(e.username || '').trim().toLowerCase();
         if (username) {
           if (!USERNAME_RE.test(username)) throw new AccountError(`${label} : identifiant « ${username} » invalide (3 à 40 caractères : lettres, chiffres, . _ -)`);
           if (repos.users.findByUsername(username) || taken.has(username)) throw new AccountError(`${label} : identifiant « ${username} » déjà utilisé`, 409);
         } else {
-          username = uniqueUsername(slug(displayName), taken);
+          username = uniqueUsername(slug(pseudonym), taken);
         }
         taken.add(username);
         const password = String(e.password || '').trim() || generatePassword();
         checkPasswordLength(password, label);
-        prepared.push({ displayName, firstName, lastName, username, password });
+        prepared.push({ pseudonym, username, password });
       }
 
       const hashes = await Promise.all(prepared.map((p) => auth.hashPassword(p.password)));
@@ -189,29 +190,24 @@ function createAccountsService({ repos, auth, content }) {
             username: p.username,
             passwordHash: hashes[i],
             role: 'student',
-            displayName: p.displayName,
-            firstName: p.firstName,
-            lastName: p.lastName,
+            displayName: p.pseudonym,
             classId: cls.id,
           });
-          created.push({ id, displayName: p.displayName, firstName: p.firstName, lastName: p.lastName, username: p.username, password: p.password, className: cls.name });
+          created.push({ id, pseudonym: p.pseudonym, displayName: p.pseudonym, username: p.username, password: p.password, className: cls.name });
         });
       });
       return created;
     },
 
-    async updateStudent(teacherId, studentId, { displayName, firstName, lastName, password, classId, active, resetPassword, username }) {
+    async updateStudent(teacherId, studentId, { pseudonym, displayName, password, classId, active, resetPassword, username }) {
       const u = ownedStudent(teacherId, studentId);
       const fields = {};
       let newPassword = null;
-      if (firstName !== undefined || lastName !== undefined) {
-        const parts = readName(
-          { firstName: firstName ?? u.first_name ?? u.display_name, lastName: lastName ?? u.last_name ?? '' },
-          'Élève'
-        );
-        Object.assign(fields, parts);
-      } else if (displayName !== undefined) {
-        Object.assign(fields, readName({ displayName }, 'Élève'));
+      const nouveauPseudo = pseudonym ?? displayName;
+      if (nouveauPseudo !== undefined) {
+        const pris = repos.users.displayNamesTaken();
+        pris.delete(u.display_name); // garder le sien n'est pas un conflit
+        fields.displayName = readPseudonym({ pseudonym: nouveauPseudo }, 'Élève', pris);
       }
       if (username !== undefined) {
         const un = String(username).trim().toLowerCase();

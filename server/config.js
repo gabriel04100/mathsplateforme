@@ -28,6 +28,17 @@ module.exports = {
     windowMs: 15 * 60 * 1000,
     max: int('LOGIN_MAX_ATTEMPTS', 10),
   },
+  // Traduction automatique du contenu (élèves allophones). Désactivée tant
+  // qu'aucun fournisseur n'est choisi : le bouton annonce alors simplement
+  // qu'elle n'est pas disponible. Voir le README, section « Traduction ».
+  //   TRANSLATE_PROVIDER=libretranslate  TRANSLATE_URL=https://mon-instance
+  //   TRANSLATE_PROVIDER=google          TRANSLATE_KEY=…
+  translate: {
+    provider: process.env.TRANSLATE_PROVIDER || '',
+    url: process.env.TRANSLATE_URL || '',
+    key: process.env.TRANSLATE_KEY || '',
+    maxCharsPerRequest: int('TRANSLATE_MAX_CHARS', 8000),
+  },
   // Compte enseignant créé automatiquement au premier démarrage s'il n'en existe aucun.
   bootstrapTeacher: {
     username: process.env.TEACHER_USERNAME || '',

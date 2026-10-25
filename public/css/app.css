@@ -88,6 +88,9 @@ p { margin: 0 0 0.8em; }
 a { color: var(--blue); text-underline-offset: 2px; }
 code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: 0.92em; background: var(--blue-soft); padding: 0.05em 0.35em; border-radius: 4px; }
 .muted { color: var(--muted); }
+/* L'attribut `hidden` doit l'emporter sur le `display` des composants : sans
+   cette règle, une carte en `display: grid` resterait visible. */
+[hidden] { display: none !important; }
 .small { font-size: 0.86rem; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 :focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
@@ -952,6 +955,151 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .fi-corrige { background: #f7f9fc; }
 .fi-sol { margin: 4px 0 0; }
 .fi-detail { margin-top: 4px; font-size: 0.94rem; color: #3b4a68; }
+
+/* ---------- Le rapporteur : mesurer et construire un angle ---------- */
+/* Deux graduations, donc deux couleurs qui ont un sens : le bleu est la
+   graduation intérieure, le rouge l'extérieure. C'est le repère qui permet de
+   nommer l'erreur classique (« tu as lu sur la mauvaise »). */
+/* La largeur disponible dépend de l'endroit où l'animation est posée (un
+   chapitre a déjà une colonne d'étapes à gauche) : c'est donc la largeur du
+   conteneur qui décide de la mise en page, pas celle de la fenêtre. */
+.w-angle { display: grid; gap: 12px; container-type: inline-size; }
+.ag-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@container (min-width: 720px) { .ag-layout { grid-template-columns: minmax(0, 1fr) 300px; } }
+.w-angle .ag-modes { display: flex; gap: 8px; }
+.w-angle .ag-stage { position: relative; min-width: 0; }
+.ag-svg { touch-action: manipulation; }
+.ag-svg.placing { cursor: crosshair; touch-action: none; }
+.ag-consigne { position: absolute; left: 14px; top: 12px; margin: 0; max-width: calc(100% - 28px); background: var(--paper-2); border: 2px solid var(--ink); border-radius: 10px; padding: 7px 12px; font-weight: 700; }
+.ag-kicker { display: block; font-size: 0.7rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--lv-4e); }
+.ag-side { display: grid; gap: 12px; min-width: 0; }
+.ag-card { background: var(--paper-2); border: 2px solid var(--rule); border-radius: 12px; padding: 12px 14px; display: grid; gap: 8px; }
+.ag-card h3 { margin: 0; font: 750 1.05rem/1.25 var(--font-title); }
+.ag-card p { margin: 0; }
+.ag-tag { font-size: 0.74rem; font-weight: 800; letter-spacing: 0.07em; text-transform: uppercase; color: var(--lv-4e); }
+.ag-readout { font: 800 1.9rem/1.1 var(--font-title); color: var(--lv-4e); font-variant-numeric: tabular-nums; min-height: 1.1em; }
+.ag-cmds { display: grid; grid-template-columns: auto auto 1fr auto; gap: 6px; }
+.ag-cmds .btn { padding: 7px 10px; }
+.ag-dots { display: flex; flex-wrap: wrap; gap: 5px; }
+.ag-dot { width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--rule); background: var(--paper-2); color: var(--muted); font: 700 0.82rem/1 var(--font-body); cursor: pointer; }
+.ag-dot.done { background: var(--blue-soft); color: var(--ink); }
+.ag-dot.cur { border-color: var(--lv-4e); color: var(--lv-4e); background: color-mix(in srgb, var(--lv-4e) 14%, var(--paper-2)); }
+.ag-method { margin: 0; padding: 0; list-style: none; counter-reset: agm; display: grid; gap: 2px; }
+.ag-method li { counter-increment: agm; display: grid; grid-template-columns: 24px 1fr; gap: 9px; padding: 6px 8px; border-radius: 9px; font-size: 0.95rem; transition: background 0.3s; }
+.ag-method li::before { content: counter(agm); width: 24px; height: 24px; border-radius: 50%; background: var(--blue-soft); color: var(--ink); font-weight: 800; font-size: 0.82rem; display: grid; place-items: center; }
+.ag-method li.on { background: color-mix(in srgb, var(--lv-4e) 12%, transparent); }
+.ag-method li.on::before { background: var(--lv-4e); color: #fff; }
+.ag-fb { margin: 0; padding: 9px 12px; border-radius: 10px; }
+.ag-fb.ok { background: var(--ok-soft); color: var(--ok); }
+.ag-fb.ko { background: var(--ko-soft); color: var(--ko); }
+.ag-check { color: var(--ok); }
+.ag-blue { color: var(--blue-ink); font-weight: 700; }
+.ag-red { color: var(--ko); font-weight: 700; }
+/* La notation de l'angle, avec son chapeau. */
+.ag-hat { position: relative; display: inline-block; padding-top: 0.14em; white-space: nowrap; font-weight: 700; }
+.ag-hat::before { content: ''; position: absolute; left: 6%; right: 6%; top: -0.08em; height: 0.34em; border-left: 0.45em solid transparent; border-right: 0.45em solid transparent; border-bottom: 0.3em solid currentColor; opacity: 0.75; }
+
+.ag-body { fill: color-mix(in srgb, var(--blue) 14%, transparent); stroke: color-mix(in srgb, var(--blue) 55%, var(--ink)); stroke-width: 1.5; }
+.ag-tick { stroke: var(--ink); stroke-width: 0.7; fill: none; }
+.ag-tick.big { stroke-width: 1.3; }
+.ag-tick.faint { stroke: var(--muted); stroke-dasharray: 3 4; }
+.ag-base { stroke: var(--ink); stroke-width: 1.3; transition: stroke 0.4s, stroke-width 0.4s; }
+.ag-base.on-blue { stroke: var(--blue-ink); stroke-width: 3; }
+.ag-base.on-red { stroke: var(--ko); stroke-width: 3; }
+.ag-center { fill: var(--paper-2); stroke: var(--ink); stroke-width: 1.3; }
+.ag-lbl { font: 650 12.5px var(--font-body); transition: opacity 0.3s; }
+.ag-lbl.out { fill: var(--ko); }
+.ag-lbl.in { fill: var(--blue-ink); font-size: 11px; }
+.ag-ray { stroke: var(--ink); stroke-width: 2.6; stroke-linecap: round; transition: stroke 0.4s, stroke-width 0.4s; }
+.ag-ray.ref-blue { stroke: var(--blue-ink); stroke-width: 3.6; }
+.ag-ray.ref-red { stroke: var(--ko); stroke-width: 3.6; }
+.ag-ray.oth { stroke: var(--lv-4e); stroke-width: 3.2; }
+.ag-pt line { stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; }
+.ag-pt.acc line { stroke: var(--lv-4e); stroke-width: 3; }
+.ag-ptlbl { font: 700 22px var(--font-title); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: 6px; stroke-linejoin: round; }
+.ag-code { fill: none; stroke: var(--lv-4e); stroke-width: 3; }
+.ag-sweep { fill: none; stroke-width: 6; stroke-linecap: round; opacity: 0.85; }
+.ag-sweep.blue, .ag-zero.blue { stroke: var(--blue-ink); }
+.ag-sweep.red, .ag-zero.red { stroke: var(--ko); }
+.ag-sweepdot { fill: var(--lv-4e); stroke: var(--paper); stroke-width: 2; }
+.ag-zero { fill: none; stroke-width: 3; }
+.ag-sweeptxt { font: 800 17px var(--font-title); fill: var(--lv-4e); paint-order: stroke; stroke: var(--paper); stroke-width: 6px; stroke-linejoin: round; }
+.ag-bubble rect { fill: var(--lv-4e); }
+.ag-bubble text { font: 800 26px var(--font-title); fill: #fff; }
+.ag-ruler { fill: color-mix(in srgb, var(--hl) 45%, transparent); stroke: color-mix(in srgb, var(--hl) 60%, var(--ink)); stroke-width: 1.4; }
+.ag-ruler-tick { stroke: color-mix(in srgb, var(--hl) 30%, var(--ink)); stroke-width: 1; }
+.ag-pencil-wood { fill: #f3d9a4; stroke: #8a6a2a; stroke-width: 1; }
+.ag-pencil-lead { fill: #333; }
+.ag-pencil-body { fill: #f2b233; stroke: #8a6a2a; stroke-width: 1; }
+.ag-pencil-ferrule { fill: #c9c9c9; stroke: #777; stroke-width: 1; }
+.ag-pencil-eraser { fill: #ef8f9a; stroke: #a85560; stroke-width: 1; }
+.ag-stu line { stroke-linecap: round; }
+.ag-stu .x { stroke: var(--lv-4e); stroke-width: 3; }
+.ag-stu .guide { stroke: var(--lv-4e); stroke-width: 2; stroke-dasharray: 6 6; opacity: 0.7; }
+.ag-stu.ghost { opacity: 0.4; }
+.ag-stu.grey .x, .ag-stu.grey .guide { stroke: var(--muted); }
+.ag-ripple { fill: none; stroke: var(--lv-4e); stroke-width: 3; transform-box: fill-box; transform-origin: center; animation: ag-ripple 1.1s ease-out infinite; }
+@keyframes ag-ripple { 0% { transform: scale(0.4); opacity: 1; } 100% { transform: scale(2.3); opacity: 0; } }
+.ag-zero.blink { animation: ag-blink 0.9s ease-in-out infinite; }
+@keyframes ag-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+
+/* ---------- La droite des décimaux : encadrer, arrondir, intercaler ---------- */
+.w-dec { position: relative; }
+.dec-quest { margin: 0; font-size: 1.1rem; }
+.dec-quest .muted { display: block; margin-top: 2px; }
+.dec-num { font-family: var(--font-title); color: var(--blue-ink); font-variant-numeric: tabular-nums; }
+.dec-bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.dec-score { font: 800 1.1rem/1 var(--font-title); color: var(--ink); }
+.dec-streak { font-weight: 700; color: var(--lv-4e); }
+.dec-zone { fill: transparent; cursor: pointer; }
+.dec-zone:hover, .dec-zone:focus { fill: var(--blue-soft); outline: none; }
+.dec-zone.juste { fill: color-mix(in srgb, var(--ok) 26%, transparent); }
+.dec-zone.faux { fill: color-mix(in srgb, var(--ko) 24%, transparent); }
+.dec-cible { fill: transparent; stroke: var(--rule); stroke-width: 2; cursor: pointer; }
+.dec-cible:hover, .dec-cible:focus { fill: var(--blue-soft); stroke: var(--blue); outline: none; }
+.dec-milieu { stroke: var(--ko); stroke-width: 2; stroke-dasharray: 5 5; }
+.dec-bille { pointer-events: none; }
+.dec-bille.pose { fill: var(--ok); }
+.dec-bille.rate { animation: dec-wobble 0.55s ease-in-out; }
+@keyframes dec-wobble { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+.dec-flot { pointer-events: none; }
+.w-dec .tick.big { stroke-width: 2.6; }
+/* Le « +10 » qui s'envole : le point gagné se voit avant de se lire. */
+.dec-pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.dec-pop { position: absolute; top: 46%; font: 800 1.9rem/1 var(--font-title); color: var(--ok); animation: dec-pop 1.2s ease-out forwards; }
+.dec-pop.ko { color: var(--ko); }
+@keyframes dec-pop { 0% { opacity: 0; transform: translateY(10px) scale(0.7); } 18% { opacity: 1; transform: translateY(0) scale(1.1); } 100% { opacity: 0; transform: translateY(-70px) scale(1); } }
+
+/* ---------- Séances : activités et feuilles d'exercices ---------- */
+.seance-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); }
+.seance-card a { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; padding: 14px 16px; background: var(--paper-2); border: 2px solid var(--rule); border-radius: 12px; color: var(--ink); text-decoration: none; height: 100%; }
+.seance-card a:hover { border-color: var(--blue); box-shadow: var(--shadow); }
+.seance-card.s-done a { border-color: color-mix(in srgb, var(--ok) 55%, var(--rule)); }
+.seance-kind { font-size: 1.7rem; line-height: 1; }
+.seance-body { display: grid; gap: 5px; min-width: 0; }
+.seance-top { display: flex; gap: 6px; flex-wrap: wrap; }
+.seance-summary { color: var(--muted); font-size: 0.94rem; }
+.seance-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Comptes élèves : le rappel RGPD et la préparation en lot. */
+.rgpd-note { background: var(--blue-soft); border-left: 4px solid var(--blue); border-radius: 8px; padding: 10px 14px; margin: 0 0 14px; font-size: 0.94rem; }
+.sheet-count { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 4px; }
+.sheet-count .field { margin-bottom: 0; }
+.sheet-count input { width: 110px; }
+
+/* ---------- Sélecteur de langue ---------- */
+.langbox { position: relative; }
+.langbtn { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px; border-radius: 8px; border: 2px solid var(--rule); background: var(--paper-2); color: var(--ink); font: 700 0.88rem/1 var(--font-body); }
+.langbtn::-webkit-details-marker { display: none; }
+.langbtn:hover { border-color: var(--blue); }
+.langmenu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 40; width: min(84vw, 268px); max-height: 60vh; overflow-y: auto; display: grid; gap: 2px; padding: 10px; background: var(--paper-2); border: 2px solid var(--rule); border-radius: 12px; box-shadow: var(--shadow); }
+.langmenu p { margin: 0 0 6px; }
+.langpick { text-align: left; padding: 7px 9px; border: 0; border-radius: 8px; background: transparent; color: var(--ink); font: 600 0.96rem/1.3 var(--font-body); cursor: pointer; }
+.langpick:hover { background: var(--blue-soft); }
+.langpick.on { background: var(--blue-soft); color: var(--blue-ink); font-weight: 800; }
+/* Langue écrite de droite à gauche : chaque paragraphe suit sa propre
+   direction, sans retourner la mise en page ni les figures. */
+.lang-rtl p, .lang-rtl li, .lang-rtl h1, .lang-rtl h2, .lang-rtl h3, .lang-rtl td, .lang-rtl th, .lang-rtl summary, .lang-rtl label > span { unicode-bidi: plaintext; }
 
 /* ---------- Divers ---------- */
 .site-footer { padding: 22px 24px; text-align: center; color: var(--muted); font-size: 0.9rem; border-top: 1px solid var(--rule); background: var(--paper-2); }

@@ -2,6 +2,7 @@
 // Plateforme Maths Collège — Gabriel Pizzo
 import { api, setUnauthorizedHandler } from './api.js';
 import { esc } from './ui.js';
+import { chargerEtat, monterSelecteur, traduireAffichage, langueActive } from './translate.js';
 import { loginView } from './views/login.js';
 import { dashboardView } from './views/dashboard.js';
 import { levelView } from './views/level.js';
@@ -16,6 +17,7 @@ import { teacherFicheView } from './views/fiche.js';
 import { teacherDocumentsView } from './views/documents.js';
 import { customExerciseView } from './views/custom-exercise.js';
 import { gamesHomeView, gameView } from './views/games.js';
+import { seancesView, teacherSeancesView } from './views/seances.js';
 
 export const state = { user: null, catalog: null };
 
@@ -26,6 +28,7 @@ const routes = [
   { path: /^\/niveau\/(6e|5e|4e|3e)$/, view: levelView, nav: (m) => `level-${m[1]}` },
   { path: /^\/chapitre\/([a-z0-9-]+)(?:\/([a-z0-9-]+))?$/, view: chapterView, nav: 'chapter' },
   { path: /^\/libre\/([a-z0-9-]+)\/([a-z0-9-]+)$/, view: (ctx) => chapterView({ ...ctx, mode: 'libre' }), nav: 'free' },
+  { path: /^\/seances$/, view: seancesView, nav: 'seances' },
   { path: /^\/exercices$/, view: freeExercisesView, nav: 'free' },
   { path: /^\/exercice\/(\d+)$/, view: customExerciseView, nav: 'free' },
   { path: /^\/jeux$/, view: gamesHomeView, nav: 'games' },
@@ -40,6 +43,7 @@ const routes = [
   // complet d'un niveau. /prof/parcours reste une porte d'entrée équivalente.
   { path: /^\/prof\/chapitres$/, view: teacherParcoursView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/parcours$/, view: teacherParcoursView, nav: 'teacher', role: 'teacher' },
+  { path: /^\/prof\/seances$/, view: teacherSeancesView, nav: 'seances', role: 'teacher' },
   { path: /^\/prof\/fiche$/, view: teacherFicheView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/documents$/, view: teacherDocumentsView, nav: 'teacher', role: 'teacher' },
   { path: /^\/prof\/chapitres\/nouveau$/, view: teacherChapterEditorView, nav: 'teacher', role: 'teacher' },
@@ -78,20 +82,27 @@ function renderShell(activeNav) {
   // Trois blocs : la marque, la navigation (intercalaires + liens), le bloc utilisateur.
   // En dessous de 1080px, « topnav » bascule seul sur une deuxième rangée.
   header.innerHTML = `
-    <a class="brand" href="/" data-link>${brandMark()}<span>Maths Collège</span></a>
+    <a class="brand" href="/" data-link>${brandMark()}<span data-no-translate>Maths Collège</span></a>
     <div class="topnav">
       <nav class="dividers" aria-label="Niveaux">${levelTabs}</nav>
       <nav class="navrow" aria-label="Menu">
         ${isTeacher ? link('/prof', 'teacher', 'Mes classes') : link('/tableau-de-bord', 'dashboard', 'Tableau de bord')}
+        ${link(isTeacher ? '/prof/seances' : '/seances', 'seances', 'Séances')}
         ${link('/exercices', 'free', 'Exercices libres')}
         ${link('/jeux', 'games', 'Jeux')}
       </nav>
     </div>
     <div class="userbox">
       <span class="nav-sep" aria-hidden="true"></span>
-      <span class="who" title="${esc(state.user.username)}">${esc(state.user.displayName)}</span>
+      <span id="langbox"></span>
+      <span class="who" title="${esc(state.user.username)}" data-no-translate>${esc(state.user.displayName)}</span>
       <button type="button" id="logout">Déconnexion</button>
     </div>`;
+  // Le sélecteur de langue. L'état du service est demandé une seule fois (la
+  // réponse est mémorisée) ; le sélecteur apparaît dès qu'elle arrive, et
+  // redessine la vue quand on change de langue.
+  const langbox = header.querySelector('#langbox');
+  chargerEtat().then(() => langbox.isConnected && monterSelecteur(langbox, () => render()));
   header.querySelector('#logout').onclick = async () => {
     await api.post('/auth/logout').catch(() => {});
     state.user = null;
@@ -144,6 +155,12 @@ export async function render() {
     el.innerHTML = `<section class="page narrow"><h1>Impossible d'afficher la page</h1><p>${esc(e.message)}</p><a class="btn" href="/" data-link>Retour à l'accueil</a></section>`;
   }
   el.focus({ preventScroll: true });
+  // La traduction s'applique après coup, sur le HTML déjà construit (formules
+  // comprises, qu'elle laisse intactes). Sans langue choisie, elle ne fait rien.
+  if (langueActive()) {
+    traduireAffichage(document.getElementById('topbar'));
+    traduireAffichage(el);
+  }
 }
 
 // Liens internes : navigation sans rechargement.

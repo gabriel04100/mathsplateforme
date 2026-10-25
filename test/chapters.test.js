@@ -1,4 +1,4 @@
-// Chapitres écrits par l'enseignant (cours + parcours), archivage, prénom/nom.
+// Chapitres écrits par l'enseignant (cours + parcours), archivage, pseudonymes.
 const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
@@ -8,11 +8,13 @@ const { unlockUpTo, reussirSerie } = require('./helpers');
 let server;
 let base;
 let services;
+let db;
 
 before(async () => {
   const config = { ...baseConfig, dbFile: ':memory:', bcryptRounds: 4, isProd: false, loginRateLimit: { windowMs: 60000, max: 50 } };
   const built = await createApp(config, { log: { info() {}, error: console.error } });
   services = built.services;
+  db = built.db;
   await services.accounts.createTeacher({ username: 'prof', password: 'motdepasse-prof', displayName: 'Gabriel Pizzo' });
   server = built.app.listen(0);
   base = `http://127.0.0.1:${server.address().port}/api`;
@@ -97,7 +99,7 @@ test('l’enseignant écrit un chapitre complet et le publie', async () => {
 test('le cours est rendu en HTML sûr pour l’élève', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   await prof.post(`/teacher/classes/${classId}/students`, {
-    students: [{ firstName: 'Nina', lastName: 'Dubois', username: 'nina', password: 'soleil42' }],
+    students: [{ pseudonym: 'Mésange polie', username: 'nina', password: 'soleil42' }],
   });
 
   const eleve = await login(client(), 'nina', 'soleil42');
@@ -174,39 +176,45 @@ test('un chapitre que l’élève ne pourrait pas suivre est refusé', async () 
   assert.equal((await bad(COURSE_STEPS, { level: '7e' })).status, 400, 'un niveau inexistant');
 });
 
-test('les élèves sont créés avec prénom et nom séparés', async () => {
+test('un compte élève n’a qu’un pseudonyme, jamais un nom', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   const created = (
     await prof.post(`/teacher/classes/${classId}/students`, {
       students: [
-        { firstName: 'Léa', lastName: 'Martin' },
-        { firstName: 'Jean-Paul', lastName: "D'Artagnan" },
-        { displayName: 'Hugo Bernard' }, // ancienne forme : toujours acceptée
+        { pseudonym: 'Loutre curieuse' },
+        { pseudonym: 'Castor intrépide', username: 'castor' },
+        {}, // rien du tout : pseudonyme, identifiant et mot de passe sont tirés au sort
       ],
     })
   ).body.created;
 
-  assert.deepEqual(
-    created.map((c) => [c.firstName, c.lastName, c.displayName]),
-    [
-      ['Léa', 'Martin', 'Léa Martin'],
-      ['Jean-Paul', "D'Artagnan", "Jean-Paul D'Artagnan"],
-      ['Hugo', 'Bernard', 'Hugo Bernard'],
-    ]
-  );
-  assert.equal(created[0].username, 'lea.martin');
+  assert.equal(created[0].pseudonym, 'Loutre curieuse');
+  assert.equal(created[0].username, 'loutre.curieuse', 'l’identifiant se déduit du pseudonyme');
+  assert.equal(created[1].username, 'castor');
+  assert.match(created[2].pseudonym, /^[A-ZÀ-Ö][^0-9]+$/, 'un pseudonyme tiré au sort, sans chiffre');
+  assert.ok(created[2].username && created[2].password);
 
+  // Rien de nominatif ne subsiste côté serveur : la fiche d'un élève ne contient
+  // ni prénom, ni nom, et la base n'a plus ces colonnes.
   const students = (await prof.get(`/teacher/classes/${classId}/students`)).body.students;
-  const lea = students.find((s) => s.username === 'lea.martin');
-  assert.equal(lea.firstName, 'Léa');
-  assert.equal(lea.lastName, 'Martin');
-  // Liste triée par nom de famille, comme une liste d'appel.
-  const noms = students.map((s) => s.lastName);
-  assert.deepEqual(noms, [...noms].sort((a, b) => a.localeCompare(b, 'fr')));
+  const loutre = students.find((s) => s.username === 'loutre.curieuse');
+  assert.equal(loutre.pseudonym, 'Loutre curieuse');
+  assert.equal(loutre.firstName, undefined);
+  assert.equal(loutre.lastName, undefined);
+  const colonnes = db.prepare('SELECT * FROM pragma_table_info(?)').all('users').map((c) => c.name);
+  assert.ok(!colonnes.includes('first_name') && !colonnes.includes('last_name'), 'les colonnes de noms ont disparu');
 
-  // Un prénom invalide est refusé, et le nom seul ne suffit pas.
-  assert.equal((await prof.post(`/teacher/classes/${classId}/students`, { students: [{ firstName: 'Léa42', lastName: 'Martin' }] })).status, 400);
-  assert.equal((await prof.post(`/teacher/classes/${classId}/students`, { students: [{ firstName: '', lastName: 'Martin' }] })).status, 400);
+  // Liste triée par pseudonyme.
+  const pseudos = students.map((s) => s.pseudonym);
+  assert.deepEqual(pseudos, [...pseudos].sort((a, b) => a.localeCompare(b, 'fr')));
+
+  // Un pseudonyme avec un chiffre, ou déjà pris, est refusé.
+  assert.equal((await prof.post(`/teacher/classes/${classId}/students`, { students: [{ pseudonym: 'Martin 42' }] })).status, 400);
+  assert.equal((await prof.post(`/teacher/classes/${classId}/students`, { students: [{ pseudonym: 'Loutre curieuse' }] })).status, 409);
+
+  // Et l'enseignant peut en demander un libre pour le proposer dans l'interface.
+  const { pseudonym } = (await prof.get('/teacher/pseudonym-suggestion')).body;
+  assert.match(pseudonym, /^[A-ZÀ-Ö][^0-9]+ [a-zà-ÿ]+$/);
 });
 
 test('une classe archivée quitte la liste principale sans perdre ses élèves', async () => {

@@ -42,13 +42,8 @@ const login = async (c, username, password) => {
 // Un chapitre livré, avec un exercice de 8 questions.
 const CHAPITRE = '3e-calcul-litteral';
 const ETAPE = 'ex2';
-const NOMS = [
-  ['Léa', 'Martin'],
-  ['Hugo', 'Bernard'],
-  ['Inès', 'Petit'],
-  ['Tom', 'Leroy'],
-  ['Zoé', 'Garcia'],
-];
+// Cinq comptes élèves : des pseudonymes, la plateforme ne connaît pas les noms.
+const PSEUDOS = ['Loutre curieuse', 'Renard rusé', 'Mésange polie', 'Castor intrépide', 'Panda serein'];
 let classId;
 
 // Un élève qui se trompe sur les `fautes` premières questions. La réponse
@@ -64,12 +59,12 @@ test('mise en place : une classe de 3e qui travaille le calcul littéral', async
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   classId = (await prof.post('/teacher/classes', { name: '3e A', level: '3e' })).body.class.id;
   const created = await prof.post(`/teacher/classes/${classId}/students`, {
-    students: NOMS.map(([f, l], i) => ({ firstName: f, lastName: l, username: `el${i + 1}`, password: 'soleil42' })),
+    students: PSEUDOS.map((pseudonym, i) => ({ pseudonym, username: `el${i + 1}`, password: 'soleil42' })),
   });
   assert.equal(created.status, 201);
 
   // Trois élèves sur cinq font l'erreur de signe sur la plupart des questions.
-  for (const [i] of NOMS.entries()) {
+  for (const [i] of PSEUDOS.entries()) {
     const eleve = await login(client(), `el${i + 1}`, 'soleil42');
     // Le parcours est séquentiel : on termine les chapitres précédents.
     await unlockUpTo(eleve, '3e', CHAPITRE);

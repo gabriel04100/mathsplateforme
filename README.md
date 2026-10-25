@@ -15,26 +15,64 @@ Plateforme de mathématiques pour le collège (6e → 3e) : cours, animations in
 - Chaque chapitre = une suite d'étapes : **cours** → **animation** → **exercices**. Une série d'exercices est validée à partir d'un score minimum (réglable par exercice).
 - **Exercices libres** : tous les exercices, accessibles à tout moment, hors parcours. Les réussites comptent aussi pour le parcours. On y trouve aussi les exercices écrits par son professeur.
 - Questions **différentes à chaque série** (générateurs aléatoires), correction détaillée après chaque réponse.
+- **Séances** : onglet à part pour les activités et feuilles d'exercices données pour une heure de cours. Hors parcours : jamais verrouillées, elles ne verrouillent rien.
 - **Jeux** : onglet commun à toutes les classes, avec un **classement global** (meilleur score par élève, toutes classes confondues, filtrable par période).
+- **Traduction** (bouton 🌐) : afficher le cours et l'interface dans une autre langue, pour les élèves allophones. Désactivée tant qu'aucun service de traduction n'est configuré — voir « Traduction » plus bas.
 
 **Côté enseignant** (`/prof`)
 - Création de classes (nom + niveau, année scolaire automatique).
-- Création des comptes élèves **en lot** dans un tableur intégré (colonnes *Prénom*, *Nom*, *Identifiant*, *Mot de passe*) : on colle une sélection depuis Excel ou Google Sheets — une colonne « Prénom Nom » est séparée automatiquement. Identifiant et mot de passe sont choisis par vous ou générés (mots simples type `tigre47`).
-- Export **CSV** et **impression de fiches** à découper pour distribuer les identifiants.
+- Création des comptes élèves **en lot** : on indique *combien* de comptes il faut, tout est tiré au sort (pseudonyme, identifiant, mot de passe) et reste modifiable à la main dans le tableur intégré. **Aucun nom d'élève n'est demandé ni stocké** — voir « Pseudonymes et RGPD » plus bas.
+- Export **CSV** et **impression de fiches** à découper pour distribuer les identifiants. Le CSV contient une colonne *Élève* vide : c'est là que vous notez qui est qui, dans votre propre tableur.
 - Nouveau mot de passe, désactivation, remise à zéro de la progression, suppression.
 - **Tableau de suivi** : élèves × chapitres, où chacun en est, dernière activité.
 - **Mes chapitres** (`/prof/chapitres`) : tout le contenu d'un niveau dans l'ordre du parcours — réordonner, masquer, réécrire les chapitres livrés, écrire les siens. Voir plus bas.
+- **Mes séances** (`/prof/seances`) : publier une activité ou une feuille d'exercices pour une heure de cours, hors parcours. Même éditeur que les chapitres.
 - **Mes exercices** (`/prof/exercices`) : écrire ses propres exercices sans toucher au code, avec aperçu en direct. Voir plus bas.
 - **Archivage** : classes, chapitres et exercices se rangent dans des archives au lieu d'être supprimés (fin d'année, contenu mis de côté). Les élèves ne voient plus ce qui est archivé ; rien n'est perdu et tout revient d'un clic.
 
-**Contenu livré** : 2 chapitres complets par niveau (40 chapitres prévus, les autres apparaissent « Bientôt »).
+**Contenu livré** : 2 à 3 chapitres complets par niveau (41 chapitres prévus, les autres apparaissent « Bientôt »).
 
 | Niveau | Chapitres complets | Animations |
 |---|---|---|
-| 6e | Nombres entiers et décimaux, Fractions | Droite graduée avec zoom, Fractions en barres |
+| 6e | Nombres entiers et décimaux, Fractions, **Angles** | Droite graduée avec zoom, **Encadrer / Intercaler / Arrondir (jeux)**, **Défi décimaux**, Fractions en barres, **Mesurer un angle**, **Construire un angle** |
 | 5e | Priorités opératoires, Nombres relatifs | Calcul pas à pas, Additions sur la droite |
 | 4e | Calcul littéral (développer), Théorème de Pythagore | Modèle des aires, Carrés de Pythagore |
 | 3e | Arithmétique, Fonctions affines, **Calcul littéral : développer** | Crible d'Ératosthène, Droite y = ax + b, Modèle des aires |
+
+---
+
+## Pseudonymes et RGPD
+
+La plateforme **ne stocke aucune donnée nominative sur les élèves**. Un compte élève, c'est :
+
+| | |
+|---|---|
+| un **identifiant de connexion** | `loutre.curieuse` |
+| un **pseudonyme** affiché partout | *Loutre curieuse* |
+| une **classe** | 6e A |
+
+C'est tout : pas de prénom, pas de nom, pas de date de naissance, pas d'adresse. Le lien
+pseudonyme → élève est tenu par l'enseignant, **hors de la plateforme**, dans sa propre feuille de
+calcul. Le CSV proposé après la création des comptes contient déjà la colonne vide prévue pour ça.
+
+Conséquence pratique : un classement de jeu, une liste de classe ou un diagnostic « Où ça coince »
+peuvent s'afficher, se projeter au tableau ou se partager — ils ne nomment personne.
+
+**Les pseudonymes sont tirés au sort** parmi 1 152 combinaisons *animal + qualité*, accordées en genre
+(« Loutre curieuse », « Renard curieux »), sans chiffre et faciles à lire à voix haute, puisqu'ils se
+distribuent en classe. Ils sont uniques : un pseudonyme déjà pris n'est jamais proposé deux fois.
+
+### Si vous aviez déjà des comptes avec des noms
+
+La migration `011_pseudonymes.js` s'en occupe au premier démarrage, et dans cet ordre :
+
+1. elle **exporte** les prénoms, noms, identifiants et classes dans
+   `data/correspondance-pseudonymes-AAAA-MM-JJ.csv`, avec le nouveau pseudonyme en première colonne ;
+2. elle attribue un pseudonyme à chaque compte ;
+3. elle **supprime** les colonnes `first_name` et `last_name` de la base.
+
+> **Ce fichier CSV est la seule copie du lien pseudonyme ↔ élève.** Rangez-le hors de la plateforme
+> (il est déjà exclu de git par `.gitignore`), et supprimez-le du serveur une fois recopié.
 
 ---
 
@@ -168,6 +206,37 @@ Les formules ne sont **jamais** exécutées comme du code : elles sont analysée
 
 ---
 
+## Traduction (élèves allophones)
+
+Le bouton 🌐 de la barre du haut affiche le cours et l'interface dans une autre langue. Seize langues
+sont proposées — celles qu'on croise le plus en classe, plus les langues vivantes du collège.
+
+**Le navigateur de l'élève ne parle jamais au traducteur.** Il demande au serveur, qui appelle le
+fournisseur et garde le résultat en cache (`translations`). Aucune adresse IP d'élève ne sort, la
+politique de sécurité du site (CSP) reste fermée, et un paragraphe de cours n'est traduit qu'une fois
+pour toute la classe. Ce qui part : le texte affiché — jamais un pseudonyme, un identifiant, un score.
+
+Rien n'est activé par défaut : sans fournisseur, le bouton annonce simplement que la traduction n'est
+pas disponible. Pour l'activer, deux possibilités dans `.env` :
+
+```bash
+# 1. LibreTranslate — logiciel libre, auto-hébergeable, gratuit
+TRANSLATE_PROVIDER=libretranslate
+TRANSLATE_URL=https://mon-instance-libretranslate
+# TRANSLATE_KEY=…        (si votre instance en demande une)
+
+# 2. Google Cloud Translation (API v2) — facturé à l'usage
+TRANSLATE_PROVIDER=google
+TRANSLATE_KEY=votre-clé-api
+```
+
+**Limite connue.** La traduction remplace le texte *à l'intérieur* du HTML déjà construit, nœud par
+nœud. Une phrase coupée par un mot en gras part donc en deux morceaux chez le traducteur, ce qui donne
+parfois une tournure maladroite. C'est le prix à payer pour que les formules (KaTeX), les figures et la
+mise en page restent intactes, et pour qu'un cours à moitié traduit reste lisible.
+
+---
+
 ## Les jeux et le classement
 
 Les jeux sont communs à toutes les classes. Le premier, **les tables de multiplication**, propose quatre niveaux (*Découverte* 2→5, *Classique* 2→10, *Expert* 2→12, *Maître* avec des trous `7 × ? = 56`) et trois durées (30, 60, 120 s).
@@ -190,6 +259,10 @@ Le serveur **recalcule les bornes** de chaque score reçu (niveau et durée conn
 
 ## Schéma du projet
 
+> **Schéma graphique complet** : [`docs/architecture.html`](docs/architecture.html) — six vues
+> (architecture générale, cycle d'un exercice, typologies de publication, verrouillage du parcours,
+> données conservées, traduction). À ouvrir dans un navigateur.
+
 ```
                     NAVIGATEUR                        │              SERVEUR
                                                       │
@@ -198,20 +271,22 @@ Le serveur **recalcule les bornes** de chaque score reçu (niveau et durée conn
          ├── views/      un écran = un fichier        │   server/app.js ─── assemblage, injection
          │   login · dashboard · level · chapter      │          │
          │   free · custom-exercise · games           │          ├── middleware/  sécurité, session, rôles
-         │   revision · teacher · parcours            │          │
+         │   revision · teacher · parcours · seances  │          │
          │   chapter-editor · exercise-editor         │          ├── routes/      valide, appelle, répond
          │   diagnostic · documents · fiche           │          │   auth · learning · teacher
-         │                                            │          │   games · documents
-         ├── exercises/  generators · template ◄──────┼──────────┤
+         │                                            │          │   games · documents · translate
+         ├── exercises/  generators · template        │          │
+         │               random (graine) ◄────────────┼──────────┤
          ├── content/    richtext ◄───────────────────┼───┐      ├── services/    toute la logique métier
-         ├── animations/ widgets ◄────────────────────┼───┤      │   auth · accounts · progress
-         ├── games/      tables · audio               │   │      │   content · chapters · exercises
-         ├── math/       expr                         │   │      │   games · documents
-         └── api.js      un seul client HTTP          │   │      │
-                                                      │   │      ├── repositories/  SEUL endroit avec du SQL
+         ├── animations/ widgets · angles ◄───────────┼───┤      │   auth · accounts · pseudonyms
+         │               decimaux                     │   │      │   progress · series · content
+         ├── games/      tables · audio               │   │      │   chapters · exercises · games
+         ├── math/       expr                         │   │      │   documents · translate
+         ├── translate.js  le bouton 🌐               │   │      │
+         └── api.js      un seul client HTTP          │   │      ├── repositories/  SEUL endroit avec du SQL
                                                       │   │      │
                                         shared-modules.js ┘      └── db/          connexion + migrations
-                                    (le serveur charge le code                         001 … 009
+                                    (le serveur charge le code                         001 … 013
                                      du navigateur pour valider
                                       avec les mêmes règles)
 ```
@@ -229,10 +304,11 @@ Une vue ne parle jamais à une route sans passer par `api.js` ; une route ne con
 
 | | Tables | Ce que ça garde |
 |---|---|---|
-| Comptes | `users`, `classes`, `sessions` | qui se connecte, et à quelle classe |
-| Parcours | `step_progress`, `attempts`, `question_results`, `last_position`, `chapter_confidence` | ce que chaque élève a fait, raté et ressenti |
-| Contenu de l'enseignant | `custom_chapters`, `chapter_overrides`, `custom_exercises`, `documents` | ce qu'il a écrit ou modifié par-dessus `content/` |
+| Comptes | `users`, `classes`, `sessions` | qui se connecte, et à quelle classe. `users.display_name` est le **pseudonyme** |
+| Parcours | `step_progress`, `attempts`, `question_results`, `last_position`, `chapter_confidence`, `exercise_sessions` | ce que chaque élève a fait, raté et ressenti ; et la graine de chaque série en cours |
+| Contenu de l'enseignant | `custom_chapters`, `chapter_overrides`, `custom_exercises`, `documents` | ce qu'il a écrit ou modifié par-dessus `content/`. `custom_chapters.kind` distingue chapitre et séance |
 | Jeux | `game_scores` | une ligne par partie, base du classement |
+| Service | `translations`, `schema_migrations` | le texte déjà traduit, par langue ; les migrations appliquées |
 
 Le programme livré vit dans `content/` (fichiers JSON), jamais en base : `services/chapters.js` fusionne les deux pour que le reste du code ignore d'où vient un chapitre.
 
@@ -330,12 +406,16 @@ docker run --rm -v maths-data:/data -v "$PWD":/sortie alpine \
   tar czf /sortie/maths-$(date +%F).tar.gz -C /data .
 ```
 
-La base contient des **données d'élèves** : noms, identifiants, progression. La sauvegarde doit être traitée comme telle — chiffrée au repos, et pas déposée n'importe où.
+La base contient des **données d'élèves** : pseudonymes, identifiants, mots de passe hachés, progression.
+Aucun nom, mais la sauvegarde reste à traiter sérieusement — chiffrée au repos, et pas déposée n'importe où.
+Le fichier `data/correspondance-pseudonymes-*.csv`, lui, contient bien des noms : il doit quitter le
+serveur dès qu'il a été recopié dans votre tableur.
 
 ### Points de vigilance
 
 - **Le port 3000 n'est pas exposé publiquement** dans la commande ci-dessus (`127.0.0.1:3000`) : seul nginx y accède.
-- **`.env` ne doit jamais entrer dans le dépôt** ; `.gitignore` et `.dockerignore` l'excluent déjà.
+- **`.env` ne doit jamais entrer dans le dépôt** ; `.gitignore` et `.dockerignore` l'excluent déjà. Le dossier `data/` non plus — il contient la base, les PDF déposés et l'export des identités.
+- **La traduction envoie du texte à un tiers** si vous la configurez avec Google. Ce texte est le contenu pédagogique affiché, jamais une donnée d'élève ; une instance LibreTranslate auto-hébergée évite la question.
 - **Les scores d'exercices sont vérifiés par le serveur** (voir l'architecture). Les scores de jeux, eux, sont seulement *bornés* : le serveur vérifie qu'un résultat est atteignable, pas qu'il a été réellement obtenu — un jeu de rapidité ne se rejoue pas question par question.
 - **Une seule instance à la fois.** SQLite et la limitation des connexions vivent en mémoire d'un seul processus. Pour passer à plusieurs instances : PostgreSQL et Redis (voir plus bas).
 

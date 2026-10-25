@@ -8,6 +8,12 @@
 const MAX_STEPS = 30;
 const MAX_BLOCKS = 40;
 const ID_PREFIX = 'c-';
+// Deux typologies de publication : le chapitre, qui prend sa place dans le
+// parcours séquentiel du niveau, et la séance (activité ou feuille
+// d'exercices), posée à côté pour une heure de cours et jamais verrouillée.
+const KINDS = ['chapitre', 'activite', 'exercices'];
+const estSeance = (kind) => kind === 'activite' || kind === 'exercices';
+const LIBELLE_KIND = { chapitre: 'Chapitre', activite: 'Activité', exercices: 'Feuille d’exercices' };
 
 class ChapterError extends Error {
   constructor(message, status = 400) {
@@ -89,6 +95,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
       id: publicId(row),
       dbId: row.id,
       custom: true,
+      kind: row.kind || 'chapitre',
       level: row.level,
       order: row.position,
       title: row.title,
@@ -160,10 +167,11 @@ function createChaptersService({ repos, content, exercises, shared }) {
       .map((c) => applyOverride(c, overrides.get(c.id)))
       .filter((c) => includeHidden || !c.hidden);
 
+    // Le parcours ne contient que des chapitres : les séances vivent à côté.
     const rows =
       user.role === 'teacher'
-        ? repos.customChapters.listByTeacherAndLevel(teacherId, levelId)
-        : repos.customChapters.listForClass(user.class_id, levelId);
+        ? repos.customChapters.listByTeacherAndLevel(teacherId, levelId, { kind: 'chapitre' })
+        : repos.customChapters.listForClass(user.class_id, levelId, { kind: 'chapitre' });
     const mine = rows.map((r) => expand(r));
     return [...base, ...mine].sort((a, b) => a.order - b.order || Number(a.custom) - Number(b.custom));
   }
@@ -190,6 +198,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
       const visible = user.class_id && repos.customChapters.listForClass(user.class_id, row.level).some((r) => r.id === row.id);
       if (!visible) return null;
     }
+
     return expand(row);
   }
 
@@ -276,6 +285,10 @@ function createChaptersService({ repos, content, exercises, shared }) {
       if (!['draft', 'published'].includes(body.status)) throw new ChapterError('Statut invalide');
       out.status = body.status;
     }
+    if (body.kind !== undefined) {
+      if (!KINDS.includes(body.kind)) throw new ChapterError('Type de publication invalide');
+      out.kind = body.kind;
+    }
     if (body.archived !== undefined) out.archived = body.archived ? 1 : 0;
     if (body.classId !== undefined) {
       if (body.classId === null || body.classId === '') out.classId = null;
@@ -298,6 +311,24 @@ function createChaptersService({ repos, content, exercises, shared }) {
     teacherIdOf,
     forUser,
     byIdForUser,
+    KINDS,
+    LIBELLE_KIND,
+    estSeance,
+
+    // Les séances visibles par cet utilisateur, hors parcours. Un élève voit
+    // celles que son enseignant a publiées pour son niveau et sa classe ;
+    // l'enseignant voit les siennes, brouillons compris.
+    seancesForUser(user, { levelId = null } = {}) {
+      const teacherId = teacherIdOf(user);
+      if (!teacherId) return [];
+      const niveaux = levelId ? [levelId] : content.levels().map((l) => l.id);
+      const rows = niveaux.flatMap((lv) =>
+        user.role === 'teacher'
+          ? repos.customChapters.listByTeacherAndLevel(teacherId, lv, { kind: 'seance' })
+          : repos.customChapters.listForClass(user.class_id, lv, { kind: 'seance' })
+      );
+      return rows.map((r) => expand(r)).sort((a, b) => (a.level < b.level ? -1 : a.level > b.level ? 1 : a.order - b.order));
+    },
 
     // Catalogue complet (tous niveaux) pour un utilisateur donné.
     catalogFor(user) {
@@ -309,12 +340,14 @@ function createChaptersService({ repos, content, exercises, shared }) {
 
     // ---------- Côté enseignant ----------
 
-    listForTeacher(teacherId, { archived = false } = {}) {
-      return repos.customChapters.listByTeacher(teacherId, { archived: archived ? 1 : 0 }).map((r) => {
+    listForTeacher(teacherId, { archived = false, kind } = {}) {
+      return repos.customChapters.listByTeacher(teacherId, { archived: archived ? 1 : 0, kind }).map((r) => {
         const ch = expand(r, { forEditing: true });
         return {
           id: ch.id,
           dbId: r.id,
+          kind: ch.kind,
+          kindLabel: LIBELLE_KIND[ch.kind] || ch.kind,
           level: ch.level,
           title: ch.title,
           summary: ch.summary,
@@ -416,10 +449,14 @@ function createChaptersService({ repos, content, exercises, shared }) {
 
     create(teacherId, body) {
       const fields = validatePayload(teacherId, body);
-      // Par défaut, le chapitre se place à la suite de ceux du niveau.
+      const kind = fields.kind || 'chapitre';
+      // Par défaut, la publication se place à la suite de celles de même
+      // typologie dans le niveau.
       if (fields.position === undefined) {
-        const existing = repos.customChapters.listByTeacherAndLevel(teacherId, fields.level);
-        const builtIn = content.chaptersOfLevel(fields.level).length;
+        const existing = repos.customChapters.listByTeacherAndLevel(teacherId, fields.level, {
+          kind: estSeance(kind) ? 'seance' : 'chapitre',
+        });
+        const builtIn = estSeance(kind) ? 0 : content.chaptersOfLevel(fields.level).length;
         fields.position = Math.max(builtIn, ...existing.map((e) => e.position)) + 1;
       }
       const id = repos.customChapters.create({
@@ -431,6 +468,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
         steps: fields.steps,
         status: fields.status || 'draft',
         classId: fields.classId ?? null,
+        kind,
       });
       return expand(repos.customChapters.findById(id), { forEditing: true });
     },
@@ -459,6 +497,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
     // Les animations partent avec leur nom lisible, jamais leur identifiant seul.
     palette(teacherId) {
       return {
+        kinds: KINDS.map((id) => ({ id, label: LIBELLE_KIND[id], seance: estSeance(id) })),
         blocks: richtext.BLOCK_TYPES,
         widgets: Object.keys(widgets.WIDGETS).map((id) => ({
           id,
@@ -475,6 +514,7 @@ function createChaptersService({ repos, content, exercises, shared }) {
   function summarizeCustom(ch) {
     return {
       id: ch.id,
+      kind: ch.kind,
       level: ch.level,
       order: ch.order,
       title: ch.title,

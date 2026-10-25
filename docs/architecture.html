@@ -1,0 +1,440 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maths Collège — comment l'application fonctionne</title>
+<style>
+:root{
+  --paper:#fbfcfe; --paper-2:#ffffff; --ink:#17233f; --muted:#5a6582; --rule:#d9e1ef;
+  --blue:#2148c0; --blue-ink:#1a3a9e; --blue-soft:#e8eefc;
+  --ok:#167a52; --ok-soft:#e3f4ec; --ko:#c62d41; --ko-soft:#fbe8eb; --hl:#ffe45c;
+  --lv-6e:#0d8a7c; --lv-5e:#6a43cc; --lv-4e:#d85d0b; --lv-3e:#c92c63;
+  --font-title:'Bricolage Grotesque','Avenir Next','Segoe UI',sans-serif;
+  --font-body:'Lexend','Segoe UI',system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#10172a; --paper-2:#18213a; --ink:#e7ebf5; --muted:#a3adc6; --rule:#2b3755;
+    --blue:#7d9bff; --blue-ink:#a9bdff; --blue-soft:#1f2b4f;
+    --ok:#4cc795; --ok-soft:#143528; --ko:#ff7a8c; --ko-soft:#3a1820; --hl:#8a7a10;
+    --lv-6e:#2cc2ae; --lv-5e:#a088f0; --lv-4e:#ff9a52; --lv-3e:#f0699a;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--font-body);
+  background-image:linear-gradient(rgba(56,102,186,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(56,102,186,.06) 1px,transparent 1px);
+  background-size:24px 24px}
+main{max-width:1060px;margin:0 auto;padding:40px 24px 80px}
+h1{font:750 2.2rem/1.15 var(--font-title);margin:0 0 6px;letter-spacing:-.01em}
+h2{font:750 1.5rem/1.2 var(--font-title);margin:56px 0 4px;padding-top:18px;border-top:2px solid var(--rule)}
+h3{font:700 1.05rem/1.3 var(--font-title);margin:26px 0 6px}
+p{margin:0 0 14px;max-width:72ch}
+.lede{color:var(--muted);font-size:1.05rem;max-width:72ch}
+.card{background:var(--paper-2);border:2px solid var(--rule);border-radius:14px;padding:18px;margin:18px 0;overflow-x:auto}
+svg{display:block;width:100%;height:auto;min-width:640px}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:10px 0 0;font-size:.9rem;color:var(--muted);list-style:none;padding:0}
+.legend li{display:flex;align-items:center;gap:7px}
+.chip{width:14px;height:14px;border-radius:4px;border:2px solid var(--ink);display:inline-block}
+.note{background:var(--blue-soft);border-left:4px solid var(--blue);border-radius:8px;padding:12px 16px;margin:18px 0}
+.note.rgpd{background:var(--ok-soft);border-color:var(--ok)}
+.note.warn{background:var(--ko-soft);border-color:var(--ko)}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em;background:var(--blue-soft);padding:1px 5px;border-radius:5px}
+table{border-collapse:collapse;width:100%;font-size:.94rem;margin:10px 0 0}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:var(--font-title)}
+ul.plain{margin:0 0 14px;padding-left:1.2em;max-width:72ch}
+footer{color:var(--muted);font-size:.9rem;border-top:2px solid var(--rule);padding-top:16px;margin-top:56px}
+/* styles communs aux schémas */
+.b{fill:var(--paper-2);stroke:var(--ink);stroke-width:2}
+.b.blue{fill:var(--blue-soft);stroke:var(--blue-ink)}
+.b.ok{fill:var(--ok-soft);stroke:var(--ok)}
+.b.ko{fill:var(--ko-soft);stroke:var(--ko)}
+.b.hl{fill:color-mix(in srgb,var(--hl) 45%,var(--paper-2));stroke:var(--ink)}
+.b.ghost{fill:none;stroke:var(--rule);stroke-dasharray:6 5}
+.t{font:600 13.5px var(--font-body);fill:var(--ink)}
+.t.ti{font:700 14.5px var(--font-title)}
+.t.sm{font-size:11.5px;fill:var(--muted);font-weight:500}
+.t.c{text-anchor:middle}
+.t.e{text-anchor:end}
+.ar{fill:none;stroke:var(--ink);stroke-width:2;marker-end:url(#fleche)}
+.ar.blue{stroke:var(--blue-ink);marker-end:url(#fleche-b)}
+.ar.dash{stroke-dasharray:6 5}
+.ar.ko{stroke:var(--ko);marker-end:url(#fleche-r)}
+</style>
+</head>
+<body>
+<main>
+
+<h1>Maths Collège — comment l'application fonctionne</h1>
+<p class="lede">Schéma de fonctionnement de la plateforme, à jour. Six vues : l'architecture générale,
+le cycle d'un exercice, les deux typologies de publication, le verrouillage du parcours, les données
+conservées (et celles qui ne le sont pas), et la traduction.</p>
+
+<!-- ===================================================================== -->
+<h2>1 · Vue d'ensemble</h2>
+<p>Trois morceaux seulement : un navigateur qui affiche et qui génère, un serveur Node qui décide et
+qui corrige, un fichier SQLite qui garde. Entre les deux premiers, un détail qui explique beaucoup de
+choix : <strong>quatre modules sont partagés tels quels</strong> — le même code tourne dans le navigateur
+et dans le serveur, donc les deux appliquent exactement les mêmes règles.</p>
+
+<div class="card">
+<svg viewBox="0 0 980 470" role="img" aria-label="Architecture générale : navigateur, serveur, données">
+  <defs>
+    <marker id="fleche" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--ink)"/></marker>
+    <marker id="fleche-b" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--blue-ink)"/></marker>
+    <marker id="fleche-r" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="var(--ko)"/></marker>
+  </defs>
+
+  <!-- colonnes -->
+  <rect class="b ghost" x="14" y="38" width="286" height="414" rx="12"/>
+  <text class="t ti c" x="157" y="28">Navigateur</text>
+  <rect class="b ghost" x="330" y="38" width="320" height="414" rx="12"/>
+  <text class="t ti c" x="490" y="28">Serveur Node (Express)</text>
+  <rect class="b ghost" x="680" y="38" width="286" height="414" rx="12"/>
+  <text class="t ti c" x="823" y="28">Ce qui est conservé</text>
+
+  <!-- navigateur -->
+  <rect class="b blue" x="32" y="56" width="250" height="52" rx="9"/>
+  <text class="t ti" x="46" y="80">app.js — routage, barre du haut</text>
+  <text class="t sm" x="46" y="97">une seule page, pas d'étape de build</text>
+
+  <rect class="b" x="32" y="120" width="250" height="52" rx="9"/>
+  <text class="t ti" x="46" y="144">views/ — 18 écrans</text>
+  <text class="t sm" x="46" y="161">élève, enseignant, éditeurs, jeux</text>
+
+  <rect class="b hl" x="32" y="184" width="250" height="62" rx="9"/>
+  <text class="t ti" x="46" y="206">animations/ — widgets</text>
+  <text class="t sm" x="46" y="223">rapporteur, droite des décimaux,</text>
+  <text class="t sm" x="46" y="238">fractions, Pythagore, crible…</text>
+
+  <rect class="b" x="32" y="258" width="250" height="52" rx="9"/>
+  <text class="t ti" x="46" y="282">KaTeX (servi en local)</text>
+  <text class="t sm" x="46" y="299">aucun CDN, aucune requête externe</text>
+
+  <!-- code partagé -->
+  <rect class="b ok" x="32" y="330" width="250" height="110" rx="9"/>
+  <text class="t ti" x="46" y="352">Code partagé (ESM)</text>
+  <text class="t sm" x="46" y="370">exercises/generators.js · template.js</text>
+  <text class="t sm" x="46" y="386">exercises/random.js (graine)</text>
+  <text class="t sm" x="46" y="402">content/richtext.js · animations/widgets.js</text>
+  <text class="t sm" x="46" y="424">chargé des deux côtés → mêmes règles</text>
+
+  <!-- serveur -->
+  <rect class="b blue" x="348" y="56" width="284" height="48" rx="9"/>
+  <text class="t ti" x="362" y="78">middleware</text>
+  <text class="t sm" x="362" y="95">session · CSP · rôles · JSON obligatoire</text>
+
+  <rect class="b" x="348" y="116" width="284" height="62" rx="9"/>
+  <text class="t ti" x="362" y="138">routes/ — fines</text>
+  <text class="t sm" x="362" y="155">auth · learning · teacher · games</text>
+  <text class="t sm" x="362" y="170">documents · translate</text>
+
+  <rect class="b" x="348" y="190" width="284" height="94" rx="9"/>
+  <text class="t ti" x="362" y="212">services/ — toute la logique</text>
+  <text class="t sm" x="362" y="230">content · chapters · progress · series</text>
+  <text class="t sm" x="362" y="246">accounts · pseudonyms · exercises</text>
+  <text class="t sm" x="362" y="262">games · documents · translate · auth</text>
+
+  <rect class="b" x="348" y="296" width="284" height="54" rx="9"/>
+  <text class="t ti" x="362" y="318">repositories/</text>
+  <text class="t sm" x="362" y="335">le seul endroit qui écrit du SQL</text>
+
+  <rect class="b" x="348" y="362" width="284" height="54" rx="9"/>
+  <text class="t ti" x="362" y="384">db/ — migrations numérotées</text>
+  <text class="t sm" x="362" y="401">001 → 013, .sql ou .js</text>
+
+  <!-- données -->
+  <rect class="b ok" x="698" y="56" width="250" height="78" rx="9"/>
+  <text class="t ti" x="712" y="78">data/plateforme.sqlite</text>
+  <text class="t sm" x="712" y="96">comptes, progression, séries,</text>
+  <text class="t sm" x="712" y="112">scores, séances, traductions</text>
+
+  <rect class="b" x="698" y="148" width="250" height="78" rx="9"/>
+  <text class="t ti" x="712" y="170">content/ — fichiers JSON</text>
+  <text class="t sm" x="712" y="188">le programme livré, versionné</text>
+  <text class="t sm" x="712" y="204">lu au démarrage, jamais réécrit</text>
+
+  <rect class="b" x="698" y="240" width="250" height="62" rx="9"/>
+  <text class="t ti" x="712" y="262">data/documents/</text>
+  <text class="t sm" x="712" y="280">les PDF déposés par l'enseignant</text>
+
+  <rect class="b ghost" x="698" y="320" width="250" height="120" rx="9"/>
+  <text class="t ti" x="712" y="344">Jamais conservé</text>
+  <text class="t sm" x="712" y="364">· le nom des élèves</text>
+  <text class="t sm" x="712" y="382">· les mots de passe en clair</text>
+  <text class="t sm" x="712" y="400">· le jeton de session brut (sha256)</text>
+  <text class="t sm" x="712" y="418">· les questions posées (une graine)</text>
+
+  <!-- flèches -->
+  <path class="ar blue" d="M 282 82 C 312 82 318 82 346 82"/>
+  <text class="t sm c" x="315" y="72">API</text>
+  <path class="ar" d="M 632 320 C 660 320 664 190 696 190"/>
+  <path class="ar" d="M 632 388 C 664 388 668 110 696 110"/>
+  <path class="ar dash" d="M 282 380 C 310 380 320 236 346 236"/>
+  <text class="t sm c" x="312" y="300">import()</text>
+</svg>
+<ul class="legend">
+  <li><span class="chip" style="background:var(--blue-soft);border-color:var(--blue-ink)"></span> entrée / sortie</li>
+  <li><span class="chip" style="background:var(--ok-soft);border-color:var(--ok)"></span> ce qui garantit la cohérence</li>
+  <li><span class="chip" style="background:color-mix(in srgb,var(--hl) 45%,#fff)"></span> animations</li>
+</ul>
+</div>
+
+<!-- ===================================================================== -->
+<h2>2 · Le cycle d'un exercice</h2>
+<p>C'est le point le plus important, et le moins visible. Les questions sont <em>fabriquées</em> par le
+navigateur, mais elles sont <em>corrigées</em> par le serveur. Les deux côtés jouent la même série parce
+qu'ils partent de la même graine et font tourner le même générateur.</p>
+<p>Conséquence directe : un élève qui poste un faux résultat depuis la console de son navigateur
+obtient zéro. Le score annoncé par le navigateur n'est jamais lu.</p>
+
+<div class="card">
+<svg viewBox="0 0 980 440" role="img" aria-label="Cycle d'une série d'exercices, du navigateur au serveur">
+  <!-- couloirs -->
+  <line x1="190" y1="54" x2="190" y2="412" stroke="var(--rule)" stroke-width="2"/>
+  <line x1="560" y1="54" x2="560" y2="412" stroke="var(--rule)" stroke-width="2"/>
+  <rect class="b blue" x="86" y="22" width="208" height="34" rx="8"/>
+  <text class="t ti c" x="190" y="44">Navigateur de l'élève</text>
+  <rect class="b blue" x="456" y="22" width="208" height="34" rx="8"/>
+  <text class="t ti c" x="560" y="44">Serveur</text>
+  <rect class="b ok" x="790" y="22" width="178" height="34" rx="8"/>
+  <text class="t ti c" x="879" y="44">exercise_sessions</text>
+  <line x1="879" y1="54" x2="879" y2="412" stroke="var(--rule)" stroke-width="2"/>
+
+  <!-- 1 -->
+  <path class="ar blue" d="M 192 86 L 556 86"/>
+  <text class="t" x="206" y="78">① « j'ouvre la série ex-arrondir »</text>
+  <!-- 2 -->
+  <path class="ar" d="M 562 120 L 875 120"/>
+  <text class="t" x="576" y="112">② tire une graine au hasard, la retient</text>
+  <text class="t sm" x="576" y="136">avec l'élève, l'étape, l'heure</text>
+  <!-- 3 -->
+  <path class="ar blue" d="M 556 166 L 194 166"/>
+  <text class="t e" x="548" y="158">③ renvoie la graine et le nombre de questions</text>
+  <!-- 4 -->
+  <rect class="b hl" x="24" y="186" width="332" height="56" rx="9"/>
+  <text class="t ti" x="38" y="208">④ le navigateur tire les questions</text>
+  <text class="t sm" x="38" y="226">withSeed(graine, …) → toujours la même série</text>
+  <!-- 5 -->
+  <rect class="b" x="24" y="254" width="332" height="40" rx="9"/>
+  <text class="t" x="38" y="279">⑤ l'élève répond, question après question</text>
+  <!-- 6 -->
+  <path class="ar blue" d="M 192 322 L 556 322"/>
+  <text class="t" x="206" y="314">⑥ envoie seulement { position, réponse, durée }</text>
+  <text class="t sm" x="206" y="338">aucun score : il ne serait pas lu</text>
+  <!-- 7 -->
+  <rect class="b ok" x="420" y="352" width="300" height="60" rx="9"/>
+  <text class="t ti" x="434" y="374">⑦ le serveur rejoue la même série</text>
+  <text class="t sm" x="434" y="392">compte les bonnes réponses, écrit la progression,</text>
+  <text class="t sm" x="434" y="406">puis consomme le jeton : il ne resservira pas</text>
+</svg>
+</div>
+
+<div class="note warn">
+<strong>Ce qui est refusé</strong> — un jeton inventé (404), le jeton d'un autre élève (404), un jeton déjà
+utilisé (409), un jeton de plus de six heures (410), et l'ouverture d'une série sur un chapitre encore
+verrouillé (403). Six tests du dossier <code>test/triche.test.js</code> rejouent chacun de ces cas.
+</div>
+
+<!-- ===================================================================== -->
+<h2>3 · Deux typologies de publication</h2>
+<p>Un <strong>chapitre</strong> prend sa place dans la progression du niveau : il attend que le précédent
+soit terminé, et il débloque le suivant. Une <strong>séance</strong> — activité ou feuille d'exercices —
+se pose à côté : elle correspond à une heure de cours qu'on donne et qu'on retire, elle est accessible
+tout de suite et ne verrouille rien.</p>
+<p>Les deux se rédigent dans le même éditeur et contiennent la même matière (cours, animations,
+exercices). Une seule colonne en base les distingue : <code>custom_chapters.kind</code>.</p>
+
+<div class="card">
+<svg viewBox="0 0 980 340" role="img" aria-label="Parcours séquentiel des chapitres et séances libres">
+  <text class="t ti" x="20" y="30">Le parcours du niveau — séquentiel</text>
+  <rect class="b ok" x="20" y="46" width="186" height="74" rx="10"/>
+  <text class="t ti" x="34" y="70">1 · Nombres décimaux</text>
+  <text class="t sm" x="34" y="89">cours · 4 animations · 5 exercices</text>
+  <text class="t sm" x="34" y="107">terminé ✓</text>
+
+  <path class="ar" d="M 212 83 L 246 83"/>
+  <rect class="b blue" x="252" y="46" width="186" height="74" rx="10"/>
+  <text class="t ti" x="266" y="70">2 · Fractions</text>
+  <text class="t sm" x="266" y="89">ouvert : le précédent est fait</text>
+  <text class="t sm" x="266" y="107">en cours</text>
+
+  <path class="ar" d="M 444 83 L 478 83"/>
+  <rect class="b" x="484" y="46" width="186" height="74" rx="10"/>
+  <text class="t ti" x="498" y="70">6 · Angles</text>
+  <text class="t sm" x="498" y="89">verrouillé 🔒</text>
+  <text class="t sm" x="498" y="107">le cours n'est pas envoyé</text>
+
+  <path class="ar dash" d="M 676 83 L 710 83"/>
+  <rect class="b ghost" x="716" y="46" width="186" height="74" rx="10"/>
+  <text class="t ti" x="730" y="70">7 · Proportionnalité</text>
+  <text class="t sm" x="730" y="89">pas encore publié</text>
+
+  <text class="t sm" x="20" y="150">Le verrou est vérifié par le serveur, pas seulement affiché : l'appel direct à l'API répond 403.</text>
+
+  <line x1="20" y1="172" x2="960" y2="172" stroke="var(--rule)" stroke-width="2" stroke-dasharray="8 6"/>
+
+  <text class="t ti" x="20" y="204">Les séances — hors parcours, dans leur propre onglet</text>
+  <rect class="b hl" x="20" y="220" width="212" height="86" rx="10"/>
+  <text class="t ti" x="34" y="244">🧪 Activité : les jetons</text>
+  <text class="t sm" x="34" y="263">6e · toutes mes classes</text>
+  <text class="t sm" x="34" y="281">ouverte tout de suite</text>
+  <text class="t sm" x="34" y="298">ne débloque rien</text>
+
+  <rect class="b hl" x="248" y="220" width="212" height="86" rx="10"/>
+  <text class="t ti" x="262" y="244">✏️ Exercices du 12 janvier</text>
+  <text class="t sm" x="262" y="263">6e · la classe de 6e A</text>
+  <text class="t sm" x="262" y="281">ouverte tout de suite</text>
+  <text class="t sm" x="262" y="298">archivable après la séance</text>
+
+  <rect class="b ghost" x="490" y="220" width="470" height="86" rx="10"/>
+  <text class="t ti" x="506" y="244">Tout le reste est commun</text>
+  <text class="t sm" x="506" y="263">même éditeur, mêmes blocs de cours, mêmes animations, mêmes exercices,</text>
+  <text class="t sm" x="506" y="281">même correction côté serveur, même suivi de progression.</text>
+  <text class="t sm" x="506" y="298">Seule la place dans l'application change.</text>
+</svg>
+</div>
+
+<!-- ===================================================================== -->
+<h2>4 · Ce que la base contient</h2>
+<p>Seize tables, qui se rangent en quatre familles. La colonne de droite dit ce qui a changé récemment.</p>
+
+<table>
+  <thead><tr><th>Famille</th><th>Tables</th><th>À noter</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Comptes</strong></td><td><code>users</code>, <code>classes</code>, <code>sessions</code></td>
+      <td><code>users.display_name</code> contient le <strong>pseudonyme</strong> de l'élève. Les colonnes
+      <code>first_name</code> et <code>last_name</code> ont été supprimées (migration 011).</td></tr>
+    <tr><td><strong>Contenu</strong></td><td><code>custom_chapters</code>, <code>chapter_overrides</code>, <code>custom_exercises</code>, <code>documents</code></td>
+      <td><code>custom_chapters.kind</code> distingue chapitre, activité et feuille d'exercices (migration 012).
+      <code>chapter_overrides</code> garde « ma version » d'un chapitre livré sans toucher aux fichiers.</td></tr>
+    <tr><td><strong>Travail de l'élève</strong></td><td><code>step_progress</code>, <code>attempts</code>, <code>question_results</code>, <code>last_position</code>, <code>chapter_confidence</code>, <code>exercise_sessions</code>, <code>game_scores</code></td>
+      <td><code>exercise_sessions</code> porte la graine d'une série et la marque comme consommée : c'est ce qui rend un score infalsifiable.</td></tr>
+    <tr><td><strong>Service</strong></td><td><code>translations</code>, <code>schema_migrations</code></td>
+      <td><code>translations</code> met en cache le texte déjà traduit, par langue (migration 013).</td></tr>
+  </tbody>
+</table>
+
+<div class="note rgpd">
+<strong>RGPD — ce que la plateforme ignore volontairement.</strong> Un compte élève, c'est un identifiant de
+connexion et un pseudonyme tiré au sort (« Loutre curieuse »). Aucun prénom, aucun nom, aucune date de
+naissance, aucune adresse. Le lien pseudonyme → élève est tenu par l'enseignant, hors de la plateforme,
+dans sa propre feuille de calcul — le fichier CSV proposé après la création des comptes contient déjà la
+colonne vide prévue pour ça. C'est ce qui permet d'afficher sans risque un classement de jeu, une liste
+de classe ou un diagnostic.
+</div>
+
+<div class="card">
+<svg viewBox="0 0 980 230" role="img" aria-label="Le lien entre pseudonyme et élève reste chez l'enseignant">
+  <rect class="b ok" x="20" y="40" width="270" height="150" rx="12"/>
+  <text class="t ti" x="36" y="68">Dans la plateforme</text>
+  <text class="t" x="36" y="96">Pseudonyme : Loutre curieuse</text>
+  <text class="t" x="36" y="120">Identifiant : loutre.curieuse</text>
+  <text class="t" x="36" y="144">Classe : 6e A</text>
+  <text class="t sm" x="36" y="172">rien d'autre</text>
+
+  <path class="ar dash" d="M 298 115 L 388 115"/>
+  <text class="t sm c" x="343" y="105">le lien n'existe</text>
+  <text class="t sm c" x="343" y="136">pas ici</text>
+
+  <rect class="b hl" x="396" y="40" width="300" height="150" rx="12"/>
+  <text class="t ti" x="412" y="68">Dans le tableur de l'enseignant</text>
+  <text class="t" x="412" y="96">Loutre curieuse → Léa M.</text>
+  <text class="t" x="412" y="120">Castor intrépide → Tom L.</text>
+  <text class="t sm" x="412" y="148">fichier personnel, hors de la plateforme</text>
+  <text class="t sm" x="412" y="172">(le CSV téléchargé a la colonne prête)</text>
+
+  <rect class="b ghost" x="716" y="40" width="244" height="150" rx="12"/>
+  <text class="t ti" x="732" y="68">Conséquence</text>
+  <text class="t sm" x="732" y="94">Un classement de jeu, une liste</text>
+  <text class="t sm" x="732" y="112">de classe ou un diagnostic peuvent</text>
+  <text class="t sm" x="732" y="130">s'afficher, se projeter au tableau,</text>
+  <text class="t sm" x="732" y="148">se partager : ils ne nomment</text>
+  <text class="t sm" x="732" y="166">personne.</text>
+</svg>
+</div>
+
+<!-- ===================================================================== -->
+<h2>5 · La traduction du contenu</h2>
+<p>Pour les élèves allophones, un bouton 🌐 affiche le cours et l'interface dans une autre langue.
+Le navigateur de l'élève ne parle jamais au traducteur : il demande au serveur, qui appelle le
+fournisseur et garde le résultat. Aucune adresse IP d'élève ne sort, et la politique de sécurité du
+site reste fermée (aucun script tiers).</p>
+
+<div class="card">
+<svg viewBox="0 0 980 240" role="img" aria-label="Chemin d'une demande de traduction">
+  <rect class="b blue" x="20" y="60" width="200" height="90" rx="10"/>
+  <text class="t ti" x="34" y="86">Navigateur</text>
+  <text class="t sm" x="34" y="106">relève les textes affichés</text>
+  <text class="t sm" x="34" y="124">(jamais les formules,</text>
+  <text class="t sm" x="34" y="140">jamais le pseudonyme)</text>
+
+  <path class="ar blue" d="M 226 105 L 296 105"/>
+  <text class="t sm c" x="261" y="96">POST</text>
+
+  <rect class="b" x="302" y="60" width="200" height="90" rx="10"/>
+  <text class="t ti" x="316" y="86">Serveur</text>
+  <text class="t sm" x="316" y="106">vérifie la langue, la taille,</text>
+  <text class="t sm" x="316" y="124">la session de l'élève</text>
+
+  <path class="ar" d="M 508 105 L 578 105"/>
+  <rect class="b ok" x="584" y="60" width="180" height="90" rx="10"/>
+  <text class="t ti" x="598" y="86">Cache</text>
+  <text class="t sm" x="598" y="106">déjà traduit ?</text>
+  <text class="t sm" x="598" y="124">on s'arrête là</text>
+
+  <path class="ar dash" d="M 770 105 L 840 105"/>
+  <rect class="b ghost" x="846" y="60" width="118" height="90" rx="10"/>
+  <text class="t ti c" x="905" y="86">Fournisseur</text>
+  <text class="t sm c" x="905" y="106">LibreTranslate</text>
+  <text class="t sm c" x="905" y="124">ou Google</text>
+
+  <text class="t sm" x="20" y="190">Le fournisseur n'est appelé que pour les textes jamais vus. Sans fournisseur configuré, le bouton annonce</text>
+  <text class="t sm" x="20" y="210">simplement que la traduction n'est pas disponible : rien ne casse, et aucune donnée ne part.</text>
+</svg>
+</div>
+
+<h3>Limite connue</h3>
+<p>La traduction remplace le texte <em>à l'intérieur</em> du HTML déjà construit, nœud par nœud. Une phrase
+coupée par un mot en gras part donc en deux morceaux chez le traducteur, ce qui donne parfois une
+tournure maladroite. C'est le prix à payer pour que les formules, les figures et la mise en page restent
+intactes — et pour qu'un cours à moitié traduit reste toujours lisible.</p>
+
+<!-- ===================================================================== -->
+<h2>6 · Où sont les choses</h2>
+<pre style="background:var(--paper-2);border:2px solid var(--rule);border-radius:12px;padding:16px;overflow-x:auto;font-size:.88rem;line-height:1.55"><code>mathsplateforme/
+├── content/            le programme livré, en JSON versionné
+│   ├── levels.json
+│   └── chapters/6e|5e|4e|3e/*.json
+├── public/             l'application web, sans étape de build
+│   ├── index.html · css/app.css
+│   └── js/
+│       ├── app.js            routage, barre du haut
+│       ├── translate.js      le bouton 🌐
+│       ├── views/            un fichier par écran
+│       ├── animations/       widgets.js · angles.js · decimaux.js
+│       ├── exercises/        generators.js · template.js · random.js
+│       ├── content/          richtext.js (markdown léger → HTML sûr)
+│       └── games/            tables de multiplication
+├── server/
+│   ├── index.js · app.js · config.js
+│   ├── middleware/           session, rôles, en-têtes de sécurité
+│   ├── routes/               fines : elles appellent un service
+│   ├── services/             toute la logique
+│   ├── repositories/         le seul SQL du projet
+│   └── db/migrations/        001 → 013
+├── scripts/            migrate · create-teacher · check-content
+├── test/               9 fichiers, 85 tests
+├── docs/               ce schéma
+└── data/               ignoré par git : la base, les PDF, l'export des identités</code></pre>
+
+<footer>
+Maths Collège — plateforme conçue par Gabriel Pizzo, professeur de mathématiques.
+Document généré avec le code, à régénérer quand l'architecture bouge.
+</footer>
+</main>
+</body>
+</html>

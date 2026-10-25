@@ -2,7 +2,6 @@
   { "id": "6e-operations", "level": "6e", "order": 3, "title": "Addition, soustraction, multiplication", "theme": "Nombres et calculs", "status": "draft", "steps": [] },
   { "id": "6e-division", "level": "6e", "order": 4, "title": "Division euclidienne et décimale", "theme": "Nombres et calculs", "status": "draft", "steps": [] },
   { "id": "6e-droites-cercles", "level": "6e", "order": 5, "title": "Droites, segments et cercles", "theme": "Espace et géométrie", "status": "draft", "steps": [] },
-  { "id": "6e-angles", "level": "6e", "order": 6, "title": "Angles", "theme": "Grandeurs et mesures", "status": "draft", "steps": [] },
   { "id": "6e-proportionnalite", "level": "6e", "order": 7, "title": "Proportionnalité", "theme": "Nombres et calculs", "status": "draft", "steps": [] },
   { "id": "6e-perimetres-aires", "level": "6e", "order": 8, "title": "Périmètres et aires", "theme": "Grandeurs et mesures", "status": "draft", "steps": [] },
   { "id": "6e-symetrie-axiale", "level": "6e", "order": 9, "title": "Symétrie axiale", "theme": "Espace et géométrie", "status": "draft", "steps": [] },

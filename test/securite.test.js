@@ -28,8 +28,8 @@ before(async () => {
   const crees = (
     await prof.post(`/teacher/classes/${ids.classe}/students`, {
       students: [
-        { firstName: 'Léa', lastName: 'Martin', username: 'lea', password: 'soleil42' },
-        { firstName: 'Hugo', lastName: 'Bernard', username: 'hugo', password: 'soleil42' },
+        { pseudonym: 'Loutre curieuse', username: 'lea', password: 'soleil42' },
+        { pseudonym: 'Renard rusé', username: 'hugo', password: 'soleil42' },
       ],
     })
   ).body.created;

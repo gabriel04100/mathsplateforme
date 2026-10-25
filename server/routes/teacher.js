@@ -9,6 +9,8 @@ module.exports = function teacherRoutes({ accounts, progress, exercises, chapter
   const wantsArchived = (req) => req.query.archives === '1';
 
   r.get('/password-suggestion', (req, res) => res.json({ password: accounts.generatePassword() }));
+  // Un pseudonyme libre : l'interface en demande un par ligne du tableau.
+  r.get('/pseudonym-suggestion', (req, res) => res.json({ pseudonym: accounts.suggestPseudonym() }));
 
   r.get('/classes', (req, res) =>
     res.json({
@@ -69,7 +71,11 @@ module.exports = function teacherRoutes({ accounts, progress, exercises, chapter
   );
 
   // Chapitres (cours + parcours) rédigés ou modifiés par l'enseignant.
-  r.get('/chapters', (req, res) => res.json({ chapters: chapters.listForTeacher(tid(req), { archived: wantsArchived(req) }) }));
+  // `?type=chapitre` (parcours) ou `?type=seance` (activités et feuilles
+  // d'exercices) ; sans paramètre, les deux.
+  r.get('/chapters', (req, res) =>
+    res.json({ chapters: chapters.listForTeacher(tid(req), { archived: wantsArchived(req), kind: req.query.type }) })
+  );
   r.get('/chapters/palette', (req, res) => res.json(chapters.palette(tid(req))));
   r.get('/chapters/:id', (req, res) => res.json({ chapter: chapters.getForTeacher(tid(req), req.params.id) }));
   r.post('/chapters', (req, res) => res.status(201).json({ chapter: chapters.create(tid(req), req.body || {}) }));

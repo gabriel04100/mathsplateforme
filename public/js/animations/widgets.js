@@ -2,6 +2,8 @@
 // `math(el)` rend le LaTeX contenu dans un élément.
 // Pour en ajouter une : écrire la fonction et l'enregistrer dans WIDGETS (le nom est celui du JSON).
 import { stepsLatex } from '../math/expr.js';
+import { mesurerAngle, construireAngle } from './angles.js';
+import { encadrerDecimal, arrondirDecimal, intercalerDecimal, defiDecimaux } from './decimaux.js';
 
 const fr = (x, d = 2) => String(+x.toFixed(d)).replace('.', ',');
 const h = (html) => {
@@ -403,6 +405,12 @@ function affineGraph(el, { a = 1, b = 2 }, { math }) {
 
 export const WIDGETS = {
   'number-line-zoom': numberLineZoom,
+  'encadrer-decimal': encadrerDecimal,
+  'arrondir-decimal': arrondirDecimal,
+  'intercaler-decimal': intercalerDecimal,
+  'defi-decimaux': defiDecimaux,
+  'mesurer-angle': mesurerAngle,
+  'construire-angle': construireAngle,
   'fraction-bars': fractionBars,
   'relative-moves': relativeMoves,
   'priority-steps': prioritySteps,
@@ -420,6 +428,36 @@ export const WIDGET_INFO = {
     label: 'Droite graduée avec zoom',
     level: '6e',
     hint: 'L’élève zoome entre deux graduations pour placer un nombre décimal au bon endroit.',
+  },
+  'encadrer-decimal': {
+    label: 'Encadrer un décimal (jeu)',
+    level: '6e',
+    hint: 'La droite est graduée au rang demandé ; l’élève clique sur le segment qui contient le nombre. Encadrer, ce n’est pas arrondir.',
+  },
+  'arrondir-decimal': {
+    label: 'Arrondir un décimal (jeu)',
+    level: '6e',
+    hint: 'Le milieu entre les deux graduations est tracé. L’élève choisit la plus proche et la bille roule jusqu’à elle.',
+  },
+  'intercaler-decimal': {
+    label: 'Intercaler un décimal (jeu)',
+    level: '6e',
+    hint: 'On zoome entre deux décimaux voisins : l’élève y place un nombre et découvre qu’il reste toujours de la place.',
+  },
+  'defi-decimaux': {
+    label: 'Défi décimaux : encadrer, arrondir, intercaler',
+    level: '6e',
+    hint: 'Dix questions mélangées, avec points et bonus de série. À donner après les trois jeux précédents.',
+  },
+  'mesurer-angle': {
+    label: 'Mesurer un angle au rapporteur',
+    level: '6e',
+    hint: 'Le rapporteur se pose étape par étape, puis la mesure se compte depuis le 0. Mode entraînement : l’élève lit l’angle lui-même.',
+  },
+  'construire-angle': {
+    label: 'Construire un angle au rapporteur',
+    level: '6e',
+    hint: 'Les quatre étapes de la construction, règle et crayon compris. Mode entraînement : l’élève place lui-même le point au bord du rapporteur.',
   },
   'fraction-bars': {
     label: 'Fractions en barres',

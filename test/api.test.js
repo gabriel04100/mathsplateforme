@@ -44,15 +44,20 @@ test('parcours complet enseignant + élève', async () => {
   assert.equal(cls.level, '4e');
   assert.equal((await prof.post('/teacher/classes', { name: '4e A', level: '4e' })).status, 409);
 
+  // Comptes élèves : un pseudonyme, pas de nom. Ici le premier occupe
+  // l'identifiant que le deuxième aurait pris : il est donc suffixé.
   const created = await prof.post(`/teacher/classes/${cls.id}/students`, {
-    students: [{ displayName: 'Léa Martin' }, { displayName: 'Léa Martin' }, { displayName: 'Hugo B', username: 'hugo.b', password: 'soleil42' }],
+    students: [
+      { pseudonym: 'Castor intrépide', username: 'loutre.curieuse' },
+      { pseudonym: 'Loutre curieuse' },
+      { pseudonym: 'Renard rusé', username: 'hugo.b', password: 'soleil42' },
+    ],
   });
   assert.equal(created.status, 201);
-  const [lea, lea2] = created.body.created;
-  assert.equal(lea.username, 'lea.martin');
-  assert.equal(lea2.username, 'lea.martin2');
-  assert.ok(lea.password.length >= 6);
-  assert.equal((await prof.post(`/teacher/classes/${cls.id}/students`, { students: [{ displayName: 'X', username: 'hugo.b' }] })).status, 409);
+  const [, loutre] = created.body.created;
+  assert.equal(loutre.username, 'loutre.curieuse2');
+  assert.ok(loutre.password.length >= 6);
+  assert.equal((await prof.post(`/teacher/classes/${cls.id}/students`, { students: [{ pseudonym: 'Tatou sage', username: 'hugo.b' }] })).status, 409);
 
   // Élève : connexion, tableau de bord, parcours
   const el = client();

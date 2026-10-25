@@ -15,9 +15,10 @@ const newId = (prefix) => `${prefix}${Date.now().toString(36).slice(-4)}${seq++}
 
 // ---------- Éditeur ----------
 
-const emptyChapter = (level = '6e') => ({
+const emptyChapter = (level = '6e', kind = 'chapitre') => ({
   title: '',
   level: LEVELS.includes(level) ? level : '6e',
+  kind,
   summary: '',
   position: undefined,
   classId: null,
@@ -40,7 +41,13 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
     isNew ? Promise.resolve(null) : api.get(`/teacher/chapters/${id}`),
   ]);
 
-  const model = loaded ? { ...loaded.chapter, position: loaded.chapter.order } : emptyChapter(query?.get('niveau'));
+  const model = loaded
+    ? { ...loaded.chapter, position: loaded.chapter.order }
+    : emptyChapter(query?.get('niveau'), query?.get('type'));
+  const KINDS = palette.kinds || [{ id: 'chapitre', label: 'Chapitre', seance: false }];
+  if (!KINDS.some((k) => k.id === model.kind)) model.kind = 'chapitre';
+  const estSeance = () => KINDS.find((k) => k.id === model.kind)?.seance === true;
+  const motType = () => (KINDS.find((k) => k.id === model.kind)?.label || 'Chapitre').toLowerCase();
   model.steps = model.steps.map((s) => ({ ...s }));
   // Un chapitre livré dans content/ se modifie « par-dessus » : l'original ne
   // bouge pas et on peut y revenir à tout moment.
@@ -53,9 +60,10 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
   el.innerHTML = `
   <section class="page wide">
     <nav class="crumbs"><a href="/prof" data-link>Mes classes</a> <span aria-hidden="true">/</span>
-      <a href="/prof/chapitres" data-link>Mes chapitres</a> <span aria-hidden="true">/</span> ${isNew ? 'Nouveau chapitre' : esc(model.title)}</nav>
+      <a href="${estSeance() ? '/prof/seances' : '/prof/chapitres'}" data-link>${estSeance() ? 'Mes séances' : 'Mes chapitres'}</a>
+      <span aria-hidden="true">/</span> ${isNew ? `Nouvelle publication` : esc(model.title)}</nav>
     <header class="page-head row">
-      <div><h1>${isNew ? 'Nouveau chapitre' : 'Modifier le chapitre'}</h1>
+      <div><h1>${isNew ? `Nouveau contenu` : `Modifier : ${esc(model.title)}`}</h1>
         <p class="muted">Le cours, les animations et les exercices, dans l’ordre où tes élèves les verront.</p></div>
       <div class="head-actions">
         <span class="tag ${model.status === 'published' ? 'ok' : ''}" data-status-tag>${model.status === 'published' ? 'Publié' : 'Brouillon'}</span>
@@ -73,11 +81,14 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
     <p class="muted small" data-save-state></p>
 
     <fieldset class="panel chapter-meta">
-      <legend>Le chapitre</legend>
+      <legend>La publication</legend>
       <div class="meta-grid">
         <label class="field"><span>Titre</span><input name="title" maxlength="80" placeholder="ex. Les fractions" value="${esc(model.title)}"></label>
+        <label class="field"><span>Type</span><select name="kind"${fromFile ? ' disabled' : ''}>
+          ${KINDS.map((k) => `<option value="${k.id}"${k.id === model.kind ? ' selected' : ''}>${esc(k.label)}</option>`).join('')}
+        </select></label>
         <label class="field"><span>Niveau</span><select name="level">${LEVELS.map((l) => `<option${l === model.level ? ' selected' : ''}>${l}</option>`).join('')}</select></label>
-        <label class="field"><span>Place dans le parcours</span><input name="position" type="number" min="1" max="999" placeholder="à la suite" value="${model.position ?? ''}"></label>
+        <label class="field" data-position-field><span>Place dans le parcours</span><input name="position" type="number" min="1" max="999" placeholder="à la suite" value="${model.position ?? ''}"></label>
         <label class="field"><span>Pour</span><select name="classId">
           <option value="">Toutes mes classes de ce niveau</option>
           ${classes.map((c) => `<option value="${c.id}"${model.classId === c.id ? ' selected' : ''}>${esc(c.name)} (${esc(c.level)})</option>`).join('')}
@@ -85,11 +96,12 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
       </div>
       <label class="field"><span>Résumé <span class="muted">(facultatif)</span></span>
         <input name="summary" maxlength="200" placeholder="En une phrase, ce que l’élève va apprendre" value="${esc(model.summary || '')}"></label>
+      <p class="muted small" data-kind-note></p>
     </fieldset>
 
     <div class="chapter-editor">
       <aside class="steps-pane">
-        <h2>Le parcours</h2>
+        <h2 data-steps-title>Le parcours</h2>
         <ol class="step-list" data-steps></ol>
         <div class="add-step">
           <p class="muted small">Ajouter une étape</p>
@@ -115,9 +127,22 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
       if (k === 'position') model.position = input.value === '' ? undefined : Number(input.value);
       else if (k === 'classId') model.classId = input.value ? Number(input.value) : null;
       else model[k] = input.value;
+      if (k === 'kind') peindreType();
       touch();
     })
   );
+
+  // Ce qui change entre un chapitre et une séance : la place dans le parcours
+  // (une séance n'en a pas) et donc le verrouillage du chapitre suivant.
+  function peindreType() {
+    const seance = estSeance();
+    metaEl.querySelector('[data-position-field]').hidden = seance;
+    metaEl.querySelector('[data-kind-note]').textContent = seance
+      ? `Une ${motType()} se pose à côté du parcours : elle est accessible tout de suite, elle ne verrouille rien et ne dépend d’aucun chapitre. Tes élèves la trouvent dans l’onglet « Séances ».`
+      : 'Un chapitre prend sa place dans le parcours du niveau : il ne s’ouvre qu’une fois le précédent terminé, et il débloque le suivant.';
+    el.querySelector('[data-steps-title]').textContent = seance ? 'Le déroulé' : 'Le parcours';
+  }
+  peindreType();
 
   function touch() {
     dirty = true;
@@ -472,6 +497,7 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
     const payload = {
       title: model.title,
       level: model.level,
+      ...(fromFile ? {} : { kind: model.kind }),
       summary: model.summary,
       classId: model.classId,
       steps: model.steps,

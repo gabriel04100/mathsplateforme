@@ -15,18 +15,24 @@ function openDatabase(file) {
   return db;
 }
 
+// Une migration est un fichier .sql exécuté tel quel, ou un fichier .js
+// exportant `up(db, log)` quand la transformation demande du code — par exemple
+// parce qu'elle doit écrire un fichier avant d'effacer des colonnes. Les deux
+// formes sont triées ensemble par nom : la numérotation reste la seule règle.
 function migrate(db, log = () => {}) {
   db.exec(`CREATE TABLE IF NOT EXISTS schema_migrations (
     name TEXT PRIMARY KEY,
     applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
   )`);
   const done = new Set(db.prepare('SELECT name FROM schema_migrations').all().map((r) => r.name));
-  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith('.sql')).sort();
+  const files = fs.readdirSync(MIGRATIONS_DIR).filter((f) => /\.(sql|js)$/.test(f)).sort();
   for (const f of files) {
     if (done.has(f)) continue;
-    const sql = fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8');
+    const appliquer = f.endsWith('.sql')
+      ? () => db.exec(fs.readFileSync(path.join(MIGRATIONS_DIR, f), 'utf8'))
+      : () => require(path.join(MIGRATIONS_DIR, f)).up(db, log);
     db.transaction(() => {
-      db.exec(sql);
+      appliquer();
       db.prepare('INSERT INTO schema_migrations (name) VALUES (?)').run(f);
     })();
     log(`migration appliquée : ${f}`);
