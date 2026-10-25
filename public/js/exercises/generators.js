@@ -8,11 +8,12 @@
 // }
 // Pour ajouter un type d'exercice : écrire une fonction ici et l'enregistrer dans GENERATORS.
 import { parse, evaluateExact, stepsLatex } from '../math/expr.js';
+import { random } from './random.js';
 
 // ---------- outils ----------
-export const rand = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
-const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
-const sign = () => (Math.random() < 0.5 ? -1 : 1);
+export const rand = (a, b) => a + Math.floor(random() * (b - a + 1));
+const pick = (arr) => arr[Math.floor(random() * arr.length)];
+const sign = () => (random() < 0.5 ? -1 : 1);
 const nz = (a, b) => { let v = 0; while (v === 0) v = rand(a, b); return v; };
 
 // Nombre → LaTeX à la française (virgule décimale).
@@ -142,7 +143,7 @@ function decCompare() {
   }
   a = +a.toFixed(3);
   b = +b.toFixed(3);
-  if (Math.random() < 0.5) [a, b] = [b, a];
+  if (random() < 0.5) [a, b] = [b, a];
   let ta = tex(a);
   let tb = tex(b);
   if (kind === 2) tb = tb.includes('{,}') ? `${tb}0` : `${tb}{,}0`;
@@ -272,7 +273,7 @@ function relSub() {
 // Opposé d'une parenthèse : $-(ax + b)$. Le piège classique est d'oublier de
 // changer le signe du second terme.
 function litOppose() {
-  const a = Math.random() < 0.45 ? 1 : nz(-7, 9);
+  const a = random() < 0.45 ? 1 : nz(-7, 9);
   const b = nz(-12, 12);
   const inner = polyLatex([b, a]);
   const exp = [-b, -a];
@@ -289,7 +290,7 @@ function litOppose() {
 // Soustraction d'une parenthèse : $A - (ax + b)$, l'erreur la plus fréquente du chapitre.
 function litSoustraireParenthese() {
   const c = nz(-9, 12);
-  const a = Math.random() < 0.4 ? 1 : nz(-6, 8);
+  const a = random() < 0.4 ? 1 : nz(-6, 8);
   const b = nz(-10, 10);
   const inner = polyLatex([b, a]);
   const exp = [c - b, -a];
@@ -304,8 +305,8 @@ function litSoustraireParenthese() {
 
 // Simple distributivité avec un facteur qui peut être négatif : $k(ax + b)$.
 function litDistributiviteSimple() {
-  const k = Math.random() < 0.45 ? -rand(2, 9) : rand(2, 9);
-  const a = Math.random() < 0.4 ? 1 : nz(-6, 8);
+  const k = random() < 0.45 ? -rand(2, 9) : rand(2, 9);
+  const a = random() < 0.4 ? 1 : nz(-6, 8);
   const b = nz(-10, 10);
   const inner = polyLatex([b, a]);
   const exp = [k * b, k * a];
@@ -321,8 +322,8 @@ function litDistributiviteSimple() {
 
 // Double distributivité : $(ax + b)(cx + d)$, avec les quatre produits détaillés.
 function litDistributiviteDouble() {
-  const a = Math.random() < 0.5 ? 1 : rand(2, 5);
-  const c = Math.random() < 0.5 ? 1 : rand(2, 4);
+  const a = random() < 0.5 ? 1 : rand(2, 5);
+  const c = random() < 0.5 ? 1 : rand(2, 4);
   const b = nz(-9, 9);
   const d = nz(-9, 9);
   const exp = [b * d, a * d + b * c, a * c];
@@ -371,11 +372,11 @@ function litMelange() {
 
 // ---------- 4e : développer ----------
 function devSimple() {
-  const k = Math.random() < 0.3 ? -rand(2, 9) : rand(2, 9);
+  const k = random() < 0.3 ? -rand(2, 9) : rand(2, 9);
   const a = nz(-6, 9);
   const b = nz(-9, 9);
   const exp = [k * b, k * a];
-  const inner = Math.random() < 0.8 ? polyLatex([b, a]) : polyLatex([b, a], 'x', { order: 'asc' });
+  const inner = random() < 0.8 ? polyLatex([b, a]) : polyLatex([b, a], 'x', { order: 'asc' });
   const kTex = k === -1 ? '-' : tex(k);
   return {
     prompt: `Développe et réduis : $${kTex}\\left(${inner}\\right)$`,
@@ -386,7 +387,7 @@ function devSimple() {
 }
 
 function devDouble() {
-  const simple = Math.random() < 0.6;
+  const simple = random() < 0.6;
   const a = simple ? 1 : rand(1, 4);
   const c = simple ? 1 : rand(1, 3);
   const b = nz(-7, 7);
@@ -429,7 +430,7 @@ function pythHypotenuse() {
   const [A, B, C] = names;
   let p;
   let q;
-  if (Math.random() < 0.6) [p, q] = pick(TRIPLES);
+  if (random() < 0.6) [p, q] = pick(TRIPLES);
   else [p, q] = [rand(2, 12), rand(2, 12)];
   const sq = p * p + q * q;
   const exact = Math.sqrt(sq);
@@ -449,7 +450,7 @@ function pythSide() {
   const [A, B, C] = names;
   let p;
   let r;
-  if (Math.random() < 0.6) {
+  if (random() < 0.6) {
     const t = pick(TRIPLES);
     p = t[0];
     r = t[2];
@@ -484,7 +485,7 @@ const TRICKY = [51, 57, 87, 91, 119, 121, 133, 143, 161, 169, 187, 203, 209, 221
 
 function arithPrime() {
   let n;
-  const r = Math.random();
+  const r = random();
   if (r < 0.45) {
     do n = rand(11, 230); while (!isPrime(n));
   } else if (r < 0.75) n = pick(TRICKY);
@@ -537,9 +538,9 @@ function affCoeff() {
   const special = rand(1, 6);
   const a = special === 1 ? 0 : nz(-7, 7);
   const b = special === 2 ? 0 : nz(-9, 9);
-  const order = Math.random() < 0.35 ? 'asc' : 'desc';
+  const order = random() < 0.35 ? 'asc' : 'desc';
   const fx = polyLatex([b, a], 'x', { order });
-  const askA = Math.random() < 0.5;
+  const askA = random() < 0.5;
   return {
     prompt: `$f(x) = ${fx}$. Quel est ${askA ? 'le <strong>coefficient directeur</strong> $a$' : "l'<strong>ordonnée à l'origine</strong> $b$"} ?`,
     input: { kind: 'number' },

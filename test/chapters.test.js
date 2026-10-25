@@ -3,7 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
-const { unlockUpTo } = require('./helpers');
+const { unlockUpTo, reussirSerie } = require('./helpers');
 
 let server;
 let base;
@@ -126,9 +126,10 @@ test('le chapitre entre dans le parcours du niveau et accepte la progression', a
 
   // Il est pris en compte comme n'importe quel chapitre du programme.
   assert.equal((await eleve.post('/progress/visit', { chapterId, stepId: 'cours' })).status, 200);
-  const attempt = await eleve.post('/progress/attempt', { chapterId, stepId: 'ex', score: 5, total: 5, durationS: 40 });
-  assert.equal(attempt.status, 200);
-  assert.equal(attempt.body.everPassed, true);
+  const etape = (await eleve.get(`/chapters/${chapterId}`)).body.chapter.steps.find((s) => s.id === 'ex');
+  const attempt = await reussirSerie(eleve, { chapterId, step: etape });
+  assert.equal(attempt.score, 5);
+  assert.equal(attempt.everPassed, true);
 
   // Et il figure dans le suivi de la classe.
   const prof = await login(client(), 'prof', 'motdepasse-prof');

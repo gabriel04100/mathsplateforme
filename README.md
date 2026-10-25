@@ -266,13 +266,13 @@ Choix faits dès maintenant pour faciliter la montée en charge :
 - **Sessions en base**, jeton aléatoire dont seule l'empreinte SHA-256 est stockée ; mots de passe hachés avec bcrypt. Changer un mot de passe ou désactiver un compte ferme ses sessions.
 - **Multi-enseignants dès le départ** : chaque classe appartient à un enseignant, qui ne voit que ses élèves.
 - **Sécurité** : en-têtes CSP stricts, aucune ressource externe (KaTeX et polices servis localement, conforme RGPD), protection CSRF (API JSON uniquement), limitation des tentatives de connexion par élève.
-- **Exercices générés côté navigateur** : aucune charge serveur pendant qu'un élève travaille ; le serveur ne reçoit que le score.
+- **Exercices générés côté navigateur, corrigés côté serveur.** Le serveur ouvre une série en tirant une graine, qu'il retient ; le navigateur tire les questions de cette graine, l'élève répond avec une correction immédiate et sans latence ; puis le serveur **rejoue exactement la même série** pour compter lui-même les bonnes réponses. Le navigateur n'envoie jamais de score, seulement ce qui a été tapé. Un élève qui poste un faux résultat depuis sa console obtient zéro.
 
 ### Prochaines étapes conseillées
 
 1. **Hébergement** : un petit serveur (ou conteneur, voir `Dockerfile`) derrière nginx avec HTTPS. SQLite tient sans problème plusieurs centaines d'élèves simultanés.
 2. **Au-delà d'un établissement** : passer à PostgreSQL (repositories) et déplacer la limitation de connexion dans Redis pour lancer plusieurs instances.
-3. **Vérification des réponses côté serveur** si l'enjeu devient évaluatif (aujourd'hui un élève averti pourrait falsifier son score d'exercice ; les scores de jeu sont déjà bornés côté serveur, mais pas recalculés question par question).
+3. **Scores de jeu** : ils sont bornés, pas recalculés. Si un classement devenait un enjeu, il faudrait y appliquer le même principe que les exercices.
 4. Éditeur de contenu en ligne pour l'enseignant, devoirs assignés à une classe avec date limite, export des résultats.
 5. Connexion via l'ENT (CAS / OpenID Connect) à la place des identifiants distribués.
 
@@ -336,7 +336,7 @@ La base contient des **données d'élèves** : noms, identifiants, progression. 
 
 - **Le port 3000 n'est pas exposé publiquement** dans la commande ci-dessus (`127.0.0.1:3000`) : seul nginx y accède.
 - **`.env` ne doit jamais entrer dans le dépôt** ; `.gitignore` et `.dockerignore` l'excluent déjà.
-- **Les scores d'exercices sont calculés par le navigateur.** Un élève averti peut en falsifier un. Les scores de jeux, eux, sont bornés côté serveur. Tant que la plateforme sert à s'entraîner, c'est sans conséquence ; si elle devient évaluative, il faudra vérifier les réponses côté serveur.
+- **Les scores d'exercices sont vérifiés par le serveur** (voir l'architecture). Les scores de jeux, eux, sont seulement *bornés* : le serveur vérifie qu'un résultat est atteignable, pas qu'il a été réellement obtenu — un jeu de rapidité ne se rejoue pas question par question.
 - **Une seule instance à la fois.** SQLite et la limitation des connexions vivent en mémoire d'un seul processus. Pour passer à plusieurs instances : PostgreSQL et Redis (voir plus bas).
 
 ---

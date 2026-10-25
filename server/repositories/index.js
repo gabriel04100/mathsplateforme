@@ -115,6 +115,21 @@ function createRepositories(db) {
     },
   };
 
+  // Séries d'exercices en cours : la graine permet au serveur de rejouer les
+  // mêmes questions pour corriger lui-même.
+  const exerciseSessions = {
+    create: ({ id, userId, chapterId, stepId, seed, count, mode }) =>
+      db
+        .prepare('INSERT INTO exercise_sessions (id, user_id, chapter_id, step_id, seed, count, mode) VALUES (?, ?, ?, ?, ?, ?, ?)')
+        .run(id, userId, chapterId, stepId, seed, count, mode),
+    find: (id) => db.prepare('SELECT * FROM exercise_sessions WHERE id = ?').get(id),
+    // Marque la série comme corrigée ; renvoie faux si elle l'était déjà,
+    // ce qui empêche de renvoyer deux fois les mêmes réponses.
+    consume: (id) =>
+      db.prepare("UPDATE exercise_sessions SET used_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ? AND used_at IS NULL").run(id).changes === 1,
+    purge: (beforeIso) => db.prepare('DELETE FROM exercise_sessions WHERE created_at < ?').run(beforeIso).changes,
+  };
+
   // Détail question par question : la matière première du diagnostic.
   const questionResults = {
     createMany: (rows) => {
@@ -463,7 +478,7 @@ function createRepositories(db) {
   };
 
   return {
-    users, classes, sessions, progress, attempts, questionResults, confidence, positions,
+    users, classes, sessions, progress, attempts, questionResults, confidence, exerciseSessions, positions,
     customExercises, customChapters, chapterOverrides, documents, gameScores,
     transaction: (fn) => db.transaction(fn)(),
   };

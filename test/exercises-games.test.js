@@ -3,6 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
+const { jouerSerie, reussirSerie } = require('./helpers');
 
 let server;
 let base;
@@ -82,15 +83,30 @@ test("l'enseignant écrit un exercice, l'élève le joue", async () => {
   assert.equal(playable.exercise.count, 4);
   assert.ok(playable.exercise.template, 'le modèle doit être envoyé au navigateur');
 
-  // Enregistrement d'une série réussie.
-  const attempt = await eleve.post(`/custom-exercises/${ex.id}/attempt`, { score: 4, total: 4, durationS: 30 });
-  assert.equal(attempt.status, 200);
-  assert.equal(attempt.body.everPassed, true);
-  assert.equal(attempt.body.saved, true);
+  // Enregistrement d'une série réussie : c'est le serveur qui compte.
+  const attempt = await reussirSerie(eleve, {
+    step: playable.exercise,
+    start: `/custom-exercises/${ex.id}/start`,
+    attempt: '/custom-exercises/attempt',
+    startBody: {},
+  });
+  assert.equal(attempt.score, 4);
+  assert.equal(attempt.everPassed, true);
+  assert.equal(attempt.saved, true);
 
-  // Un score impossible est refusé.
-  assert.equal((await eleve.post(`/custom-exercises/${ex.id}/attempt`, { score: 9, total: 4 })).status, 400);
-  assert.equal((await eleve.post(`/custom-exercises/${ex.id}/attempt`, { score: 2, total: 7 })).status, 400);
+  // Un élève qui se trompe partout n'obtient pas la validation.
+  const rate = await jouerSerie(eleve, {
+    step: playable.exercise,
+    start: `/custom-exercises/${ex.id}/start`,
+    attempt: '/custom-exercises/attempt',
+    startBody: {},
+    repondre: () => 'faux',
+  });
+  assert.equal(rate.resultat.body.score, 0);
+
+  // Un jeton inventé ou réutilisé ne passe pas.
+  assert.equal((await eleve.post('/custom-exercises/attempt', { sessionId: 'inexistant', answers: [] })).status, 404);
+  assert.equal((await eleve.post('/custom-exercises/attempt', { sessionId: rate.ouverture.sessionId, answers: [] })).status, 409);
 
   // La série apparaît dans l'historique du tableau de bord, avec un titre lisible.
   const recent = (await eleve.get('/dashboard')).body.recent;

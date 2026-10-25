@@ -7,7 +7,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
-const { makeClient, login } = require('./helpers');
+const { makeClient, login, reussirSerie } = require('./helpers');
 
 let server;
 let base;
@@ -81,6 +81,7 @@ test('sans session, toute l’API répond « connexion requise »', async () => 
   for (const url of routes) {
     assert.equal((await anon.get(url)).status, 401, `GET ${url} doit exiger une connexion`);
   }
+  assert.equal((await anon.post('/progress/start', {})).status, 401);
   assert.equal((await anon.post('/progress/attempt', {})).status, 401);
   assert.equal((await anon.post('/progress/confiance', {})).status, 401);
   assert.equal((await anon.post('/games/tables-multiplication/scores', {})).status, 401);
@@ -114,7 +115,8 @@ test('un élève ne voit ni ne modifie le travail d’un autre', async () => {
   // Hugo travaille.
   const ch = (await hugo.get('/levels/6e')).body.chapters.find((c) => c.status === 'published');
   const exo = ch.steps.find((s) => s.type === 'exercise');
-  await hugo.post('/progress/attempt', { chapterId: ch.id, stepId: exo.id, score: exo.count, total: exo.count, durationS: 20 });
+  const complet = (await hugo.get(`/chapters/${ch.id}`)).body.chapter;
+  await reussirSerie(hugo, { chapterId: ch.id, step: complet.steps.find((s) => s.id === exo.id) });
 
   // Léa ne voit que le sien : son tableau de bord ne parle que d'elle.
   const lea = await login(client(), 'lea', 'soleil42');

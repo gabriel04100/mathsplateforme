@@ -12,7 +12,7 @@ const { cleanQuestionDetail } = require('./question-detail');
 
 // `chapters` fusionne le programme des fichiers et les chapitres écrits par
 // l'enseignant : la progression ne fait donc aucune différence entre les deux.
-function createProgressService({ repos, content, chapters, exercises = null }) {
+function createProgressService({ repos, content, chapters, exercises = null, series }) {
   // Un élève sans classe, ou un utilisateur absent, ne voit que les fichiers.
   const chaptersOf = (user, levelId) => chapters.forUser(user, levelId);
   const chapterOf = (user, chapterId) => chapters.byIdForUser(user, chapterId);
@@ -124,6 +124,41 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
     return { ch, step };
   }
 
+  // Écrit une série déjà corrigée. Aucun score ne vient du dehors : les
+  // appelants l'obtiennent de services/series.js, qui rejoue les questions.
+  function enregistrer(user, { chapterId, stepId, mode, step, score, total, durationS, detail }) {
+    const userId = user.id;
+    const m = mode === 'libre' ? 'libre' : 'parcours';
+    let result;
+    repos.transaction(() => {
+      const attemptId = repos.attempts.create({ userId, chapterId, stepId, mode: m, score, total, durationS });
+      repos.questionResults.createMany(cleanQuestionDetail(detail, { attemptId, userId, chapterId, stepId, total }));
+      const prev = repos.progress.get(userId, chapterId, stepId);
+      const better = !prev || prev.best_score == null || score > prev.best_score;
+      const passed = prev?.status === 'passed' || score >= step.pass;
+      repos.progress.upsert({
+        userId,
+        chapterId,
+        stepId,
+        status: passed ? 'passed' : 'in_progress',
+        bestScore: better ? score : prev.best_score,
+        bestTotal: total,
+        attempts: (prev?.attempts || 0) + 1,
+      });
+      repos.positions.set(userId, chapterId, stepId, m);
+      result = {
+        score,
+        total,
+        passed: score >= step.pass,
+        everPassed: passed,
+        pass: step.pass,
+        bestScore: better ? score : prev.best_score,
+        detail: detail.map((d) => ({ position: d.position, ok: d.ok, expected: d.expected })),
+      };
+    });
+    return result;
+  }
+
   return {
     levelProgress(user, levelId) {
       return levelState(user, levelId, indexProgress(repos.progress.listForUser(user.id)));
@@ -150,37 +185,35 @@ function createProgressService({ repos, content, chapters, exercises = null }) {
       return { ok: true };
     },
 
-    recordAttempt(user, { chapterId, stepId, score, total, durationS, mode = 'parcours', questions }) {
+    // Ouvre une série : le serveur choisit les questions (par une graine) et
+    // les retient, pour pouvoir corriger lui-même ensuite.
+    startSeries(user, { chapterId, stepId, mode = 'parcours' }) {
       const { step } = requireStep(user, chapterId, stepId, { mode });
-      const userId = user.id;
       if (step.type !== 'exercise') throw new ProgressError("Cette étape n'est pas un exercice");
-      score = Number(score);
-      total = Number(total);
-      if (!Number.isInteger(score) || !Number.isInteger(total) || total !== step.count || score < 0 || score > total) {
-        throw new ProgressError('Score invalide');
-      }
-      const m = mode === 'libre' ? 'libre' : 'parcours';
-      let result;
-      repos.transaction(() => {
-        const attemptId = repos.attempts.create({ userId, chapterId, stepId, mode: m, score, total, durationS });
-        repos.questionResults.createMany(cleanQuestionDetail(questions, { attemptId, userId, chapterId, stepId, total }));
-        const prev = repos.progress.get(userId, chapterId, stepId);
-        const better = !prev || prev.best_score == null || score > prev.best_score;
-        const passed = prev?.status === 'passed' || score >= step.pass;
-        repos.progress.upsert({
-          userId,
-          chapterId,
-          stepId,
-          status: passed ? 'passed' : 'in_progress',
-          bestScore: better ? score : prev.best_score,
-          bestTotal: total,
-          attempts: (prev?.attempts || 0) + 1,
-        });
-        repos.positions.set(userId, chapterId, stepId, m);
-        result = { passed: score >= step.pass, everPassed: passed, pass: step.pass, bestScore: better ? score : prev.best_score };
-      });
-      return result;
+      return series.open(user, { chapterId, stepId, step, mode });
     },
+
+    // Enregistre une série en la corrigeant. Le navigateur n'envoie que les
+    // réponses tapées : le score est calculé ici, à partir des mêmes questions.
+    recordSeries(user, body) {
+      const { session, step, score, total, durationS, detail } = series.grade(user, body, (s) => {
+        const { step: etape } = requireStep(user, s.chapter_id, s.step_id, { mode: s.mode });
+        if (etape.type !== 'exercise') throw new ProgressError("Cette étape n'est pas un exercice");
+        return etape;
+      });
+      return enregistrer(user, {
+        chapterId: session.chapter_id,
+        stepId: session.step_id,
+        mode: session.mode,
+        step,
+        score,
+        total,
+        durationS,
+        detail,
+      });
+    },
+
+    recordSeriesResult: enregistrer,
 
     dashboard(user) {
       const idx = indexProgress(repos.progress.listForUser(user.id));

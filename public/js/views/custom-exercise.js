@@ -33,7 +33,8 @@ export async function customExerciseView({ el, params: [id] }) {
     onFinish: () => {},
     navHtml: backHtml,
     bindNav: () => {},
-    submit: (payload) => api.post(`/custom-exercises/${id}/attempt`, payload),
+    openSeries: () => api.post(`/custom-exercises/${id}/start`, {}),
+    sendAnswers: (payload) => api.post('/custom-exercises/attempt', payload),
   });
 
   return cleanup;

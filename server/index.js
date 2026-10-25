@@ -16,7 +16,11 @@ async function main() {
     }
   }
 
-  setInterval(() => services.auth.purgeExpired(), 6 * 3600 * 1000).unref();
+  setInterval(() => {
+    services.auth.purgeExpired();
+    // Les séries d'exercices abandonnées ne servent plus à rien.
+    services.series.purgeExpirees();
+  }, 6 * 3600 * 1000).unref();
 
   const server = app.listen(config.port, () => {
     const s = services.content.stats();

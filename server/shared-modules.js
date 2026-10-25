@@ -11,13 +11,14 @@ const PUBLIC_JS = path.join(__dirname, '..', 'public', 'js');
 const load = (...parts) => import(pathToFileURL(path.join(PUBLIC_JS, ...parts)).href);
 
 async function loadSharedModules() {
-  const [template, richtext, generators, widgets] = await Promise.all([
+  const [template, richtext, generators, widgets, random] = await Promise.all([
     load('exercises', 'template.js'),
     load('content', 'richtext.js'),
     load('exercises', 'generators.js'),
     load('animations', 'widgets.js'),
+    load('exercises', 'random.js'),
   ]);
-  return { template, richtext, generators, widgets };
+  return { template, richtext, generators, widgets, random };
 }
 
 module.exports = { loadSharedModules };

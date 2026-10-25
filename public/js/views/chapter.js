@@ -6,6 +6,7 @@ import { esc, renderMath, STEP_KIND, stepIcon, toast } from '../ui.js';
 import { WIDGETS } from '../animations/widgets.js';
 import { generateSet, expectedText } from '../exercises/generators.js';
 import { generateFromTemplate } from '../exercises/template.js';
+import { withSeed } from '../exercises/random.js';
 import { documentsListHtml } from './documents.js';
 
 const BLOCK_LABEL = { definition: 'Définition', property: 'Propriété', method: 'Méthode', example: 'Exemple', remark: 'Remarque', text: '', video: '' };
@@ -250,9 +251,14 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
 // `step` vient d'un chapitre (clé `generator`) ou d'un exercice écrit par
 // l'enseignant (clé `template`) : le déroulé est exactement le même.
 // `submit` dit où envoyer le score ; par défaut, la progression du parcours.
-export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, submit }) {
-  const sendScore =
-    submit || ((payload) => api.post('/progress/attempt', { chapterId: ch.id, stepId: step.id, mode, ...payload }));
+// `openSeries` demande au serveur d'ouvrir une série : il renvoie une graine
+// et un jeton. On tire les questions à partir de cette graine — le serveur
+// pourra donc rejouer exactement la même série pour corriger lui-même.
+// `sendAnswers` lui renvoie les réponses tapées, jamais un score.
+export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, openSeries, sendAnswers }) {
+  const ouvrir = openSeries || (() => api.post('/progress/start', { chapterId: ch.id, stepId: step.id, mode }));
+  const envoyer = sendAnswers || ((payload) => api.post('/progress/attempt', payload));
+  let sessionId = null;
   let questions;
   let i;
   let score;
@@ -263,8 +269,21 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
   let detail; // une entrée par question : ce qui a été demandé, ce qui a été répondu
   let alive = true;
 
-  function start() {
-    questions = step.template ? generateFromTemplate(step.template, step.count) : generateSet(step.generator, step.count, step.params);
+  async function start() {
+    pane.innerHTML = '<div class="loading" aria-busy="true">Préparation de la série…</div>';
+    let serie;
+    try {
+      serie = await ouvrir();
+    } catch (e) {
+      pane.innerHTML = `<p class="form-error">${esc(e.message)}</p>`;
+      return;
+    }
+    if (!alive) return;
+    sessionId = serie.sessionId;
+    // Mêmes questions que celles que le serveur rejouera pour corriger.
+    questions = withSeed(serie.seed, () =>
+      step.template ? generateFromTemplate(step.template, step.count) : generateSet(step.generator, step.count, step.params)
+    );
     i = 0;
     score = 0;
     answered = false;
@@ -359,12 +378,11 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
       hint.hidden = true;
       answered = true;
       results.push(res.ok);
+      // On ne retient que ce que l'élève a tapé : le serveur recalculera
+      // l'énoncé, la réponse attendue et la justesse de son côté.
       detail.push({
         position: i + 1,
-        prompt: plain(q.prompt),
-        expected: expectedFor(q),
-        given: answerText(q, raw),
-        ok: res.ok,
+        given: q.input.kind === 'choice' ? String(raw) : String(raw ?? '').trim(),
         durationS: Math.max(0, Math.round((Date.now() - questionStarted) / 1000)),
       });
       if (res.ok) score++;
@@ -396,6 +414,8 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
 
   async function finish() {
     const durationS = Math.round((Date.now() - started) / 1000);
+    // Le score affiché ici est celui compté localement ; il est remplacé par
+    // celui du serveur dès que la réponse arrive, seul faisant autorité.
     const passed = score >= step.pass;
     pane.innerHTML = `
       <article class="exercise result ${passed ? 'passed' : ''}">
@@ -409,8 +429,14 @@ export function runExercise(pane, ch, step, mode, { onFinish, navHtml, bindNav, 
     pane.querySelector('[data-again]').onclick = start;
     bindNav();
     try {
-      const res = await sendScore({ score, total: questions.length, durationS, questions: detail });
+      const res = await envoyer({ sessionId, answers: detail, durationS });
       if (!alive) return;
+      // Le serveur a recorrigé la série : c'est son score qui est affiché.
+      if (Number.isInteger(res?.score) && res.score !== score) {
+        score = res.score;
+        const grosScore = pane.querySelector('.big-score span');
+        if (grosScore) grosScore.textContent = score;
+      }
       pane.querySelector('.save-state').textContent = res?.saved === false ? 'Aperçu : le score n’est pas enregistré.' : 'Score enregistré.';
       onFinish(res);
     } catch (e) {

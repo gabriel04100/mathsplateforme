@@ -18,7 +18,7 @@ class ExerciseError extends Error {
   }
 }
 
-function createExercisesService({ repos, shared, content }) {
+function createExercisesService({ repos, shared, content, series }) {
   const estNiveau = (id) => content.levels().some((l) => l.id === id);
   const engine = shared.template;
 
@@ -188,34 +188,52 @@ function createExercisesService({ repos, shared, content }) {
 
     // Enregistre une série. Les exercices de l'enseignant vivent hors parcours :
     // ils alimentent l'historique et le meilleur score, pas le déblocage des chapitres.
-    recordAttempt(user, id, { score, total, durationS, questions }) {
+    // Ouvre une série sur un exercice personnel : même principe que pour un
+    // chapitre, le serveur retient les questions qu'il a tirées.
+    startSeries(user, id, { mode = 'libre' } = {}) {
       const { exercise } = this.getPlayable(user, id);
-      if (user.role === 'teacher') return { passed: score >= exercise.pass, everPassed: false, pass: exercise.pass, bestScore: score, saved: false };
-      const s = Number(score);
-      const t = Number(total);
-      if (!Number.isInteger(s) || !Number.isInteger(t) || t !== exercise.count || s < 0 || s > t) {
-        throw new ExerciseError('Score invalide');
+      return series.open(user, { chapterId: CUSTOM_CHAPTER_ID, stepId: exercise.id, step: exercise, mode });
+    },
+
+    // Corrige et enregistre. L'enseignant qui essaie son propre exercice voit
+    // son score, mais rien n'est écrit : ce n'est pas un élève.
+    recordSeries(user, body) {
+      const corrige = series.grade(user, body, (sess) => {
+        const m = /^ex-(\d+)$/.exec(sess.step_id);
+        if (!m) throw new ExerciseError('Exercice introuvable', 404);
+        return this.getPlayable(user, m[1]).exercise;
+      });
+      const { session, step, score, total, durationS, detail } = corrige;
+      if (user.role === 'teacher') {
+        return { score, total, passed: score >= step.pass, everPassed: false, pass: step.pass, bestScore: score, saved: false, detail: detail.map((d) => ({ position: d.position, ok: d.ok, expected: d.expected })) };
       }
-      const stepId = exercise.id;
+      const stepId = session.step_id;
       let result;
       repos.transaction(() => {
-        const attemptId = repos.attempts.create({ userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, mode: 'libre', score: s, total: t, durationS });
-        repos.questionResults.createMany(
-          cleanQuestionDetail(questions, { attemptId, userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, total: t })
-        );
+        const attemptId = repos.attempts.create({ userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, mode: 'libre', score, total, durationS });
+        repos.questionResults.createMany(cleanQuestionDetail(detail, { attemptId, userId: user.id, chapterId: CUSTOM_CHAPTER_ID, stepId, total }));
         const prev = repos.progress.get(user.id, CUSTOM_CHAPTER_ID, stepId);
-        const better = !prev || prev.best_score == null || s > prev.best_score;
-        const passed = prev?.status === 'passed' || s >= exercise.pass;
+        const better = !prev || prev.best_score == null || score > prev.best_score;
+        const passed = prev?.status === 'passed' || score >= step.pass;
         repos.progress.upsert({
           userId: user.id,
           chapterId: CUSTOM_CHAPTER_ID,
           stepId,
           status: passed ? 'passed' : 'in_progress',
-          bestScore: better ? s : prev.best_score,
-          bestTotal: t,
+          bestScore: better ? score : prev.best_score,
+          bestTotal: total,
           attempts: (prev?.attempts || 0) + 1,
         });
-        result = { passed: s >= exercise.pass, everPassed: passed, pass: exercise.pass, bestScore: better ? s : prev.best_score, saved: true };
+        result = {
+          score,
+          total,
+          passed: score >= step.pass,
+          everPassed: passed,
+          pass: step.pass,
+          bestScore: better ? score : prev.best_score,
+          saved: true,
+          detail: detail.map((d) => ({ position: d.position, ok: d.ok, expected: d.expected })),
+        };
       });
       return result;
     },

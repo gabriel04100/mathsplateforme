@@ -3,7 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
-const { unlockUpTo } = require('./helpers');
+const { unlockUpTo, jouerSerie, reussirSerie } = require('./helpers');
 
 let server;
 let base;
@@ -51,23 +51,14 @@ const NOMS = [
 ];
 let classId;
 
-// Une série où `fautes` questions portent l'erreur de signe classique.
-function serie(fautes) {
-  const questions = [];
-  for (let q = 0; q < 8; q++) {
-    const a = 3 + q;
-    const faux = q < fautes;
-    questions.push({
-      position: q + 1,
-      prompt: `Supprime la parenthèse : -(x + ${a})`,
-      expected: `-x - ${a}`,
-      given: faux ? `-x + ${a}` : `-x - ${a}`,
-      ok: !faux,
-      durationS: 10,
-    });
-  }
-  return { chapterId: CHAPITRE, stepId: ETAPE, score: 8 - fautes, total: 8, durationS: 80, questions };
-}
+// Un élève qui se trompe sur les `fautes` premières questions. La réponse
+// donnée est forcément différente de la bonne, quel que soit le type.
+const seTrompe = (fautes) => (q, i, bonne) => {
+  if (i >= fautes) return bonne;
+  if (q.input.kind === 'choice') return String((Number(bonne) + 1) % q.input.options.length);
+  if (q.input.kind === 'poly') return bonne === 'x' ? '2x' : 'x';
+  return bonne === '0' ? '1' : '0';
+};
 
 test('mise en place : une classe de 3e qui travaille le calcul littéral', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
@@ -82,7 +73,10 @@ test('mise en place : une classe de 3e qui travaille le calcul littéral', async
     const eleve = await login(client(), `el${i + 1}`, 'soleil42');
     // Le parcours est séquentiel : on termine les chapitres précédents.
     await unlockUpTo(eleve, '3e', CHAPITRE);
-    assert.equal((await eleve.post('/progress/attempt', serie(i < 3 ? 5 : 1))).status, 200);
+    const step = (await eleve.get(`/chapters/${CHAPITRE}`)).body.chapter.steps.find((x) => x.id === ETAPE);
+    const { resultat } = await jouerSerie(eleve, { chapterId: CHAPITRE, step, repondre: seTrompe(i < 3 ? 5 : 1) });
+    assert.equal(resultat.status, 200);
+    assert.equal(resultat.body.score, step.count - (i < 3 ? 5 : 1), 'le serveur compte lui-même');
   }
 });
 
@@ -99,7 +93,7 @@ test('le diagnostic mesure la réussite par exercice', async () => {
   assert.equal(etape.elevesConcernes, 5);
   // 3 élèves à 3/8 et 2 à 7/8 → 23 bonnes réponses sur 40, soit 58 %.
   assert.equal(etape.reussite, 58);
-  assert.equal(etape.tempsMoyen, 10);
+  assert.equal(etape.tempsMoyen, 5);
 
   // Les étapes non travaillées sont déclarées comme telles, pas à 0 %.
   const jamaisFaite = d.steps.find((s) => s.stepId === 'ex5');
@@ -107,54 +101,56 @@ test('le diagnostic mesure la réussite par exercice', async () => {
   assert.equal(jamaisFaite.reussite, null);
 });
 
-test('le diagnostic fait remonter l’erreur commune à la classe', async () => {
+test('le diagnostic fait remonter les erreurs réellement commises', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   const d = (await prof.get(`/teacher/classes/${classId}/diagnostic/${CHAPITRE}`)).body;
 
   assert.ok(d.erreurs.length, 'des erreurs sont remontées');
-  const premiere = d.erreurs[0];
-  // La question ratée par tout le monde arrive en tête, avec ce qui a été répondu.
-  assert.equal(premiere.eleves, 5);
-  assert.equal(premiere.given, '-x + 3');
-  assert.equal(premiere.expected, '-x - 3');
-  assert.match(premiere.prompt, /Supprime la parenthèse/);
-  assert.equal(premiere.stepTitle, "Opposé d'une parenthèse");
-
-  // Classement par nombre d'élèves concernés : l'erreur partagée passe devant.
+  for (const e of d.erreurs) {
+    // Une erreur, c'est une réponse donnée différente de celle attendue.
+    assert.notEqual(e.given, e.expected);
+    assert.ok(e.given, 'la réponse de l’élève est conservée');
+    assert.ok(e.expected, 'la réponse attendue aussi');
+    assert.equal(e.stepTitle, "Opposé d'une parenthèse");
+    assert.ok(e.eleves >= 1);
+  }
+  // Classement par nombre d'élèves concernés, du plus partagé au plus isolé.
   const eleves = d.erreurs.map((e) => e.eleves);
   assert.deepEqual(eleves, [...eleves].sort((a, b) => b - a));
-  // Une bonne réponse n'apparaît jamais comme erreur.
-  assert.ok(d.erreurs.every((e) => e.given !== e.expected));
 });
 
-test('le détail envoyé par le navigateur est borné et ne bloque jamais la série', async () => {
+
+test('des réponses absentes ou aberrantes ne passent pas pour des bonnes', async () => {
   const eleve = await login(client(), 'el1', 'soleil42');
+  const step = (await eleve.get(`/chapters/${CHAPITRE}`)).body.chapter.steps.find((x) => x.id === ETAPE);
 
-  // Détail absent : la série est tout de même enregistrée.
-  const sansDetail = await eleve.post('/progress/attempt', { chapterId: CHAPITRE, stepId: ETAPE, score: 8, total: 8, durationS: 60 });
-  assert.equal(sansDetail.status, 200);
+  // Aucune réponse envoyée : la série est enregistrée, à zéro.
+  const vide = await eleve.post('/progress/start', { chapterId: CHAPITRE, stepId: ETAPE });
+  const sansReponses = await eleve.post('/progress/attempt', { sessionId: vide.body.sessionId, answers: [], durationS: 10 });
+  assert.equal(sansReponses.status, 200);
+  assert.equal(sansReponses.body.score, 0, 'ne rien répondre ne vaut pas tout juste');
 
-  // Détail aberrant : accepté sans faire échouer l'enregistrement du score.
+  // Réponses illisibles ou en surnombre : comptées fausses, jamais acceptées.
+  const bizarre = await eleve.post('/progress/start', { chapterId: CHAPITRE, stepId: ETAPE });
   const absurde = await eleve.post('/progress/attempt', {
-    chapterId: CHAPITRE,
-    stepId: ETAPE,
-    score: 8,
-    total: 8,
-    durationS: 60,
-    questions: [
-      { position: -5, prompt: 'x'.repeat(5000), expected: 'y'.repeat(5000), given: 'z'.repeat(5000), ok: 'oui', durationS: 999999 },
+    sessionId: bizarre.body.sessionId,
+    durationS: 99999999,
+    answers: [
+      { position: -5, given: 'x'.repeat(5000), durationS: 999999 },
       'pas un objet',
       null,
-      ...Array.from({ length: 50 }, (_, i) => ({ position: i, prompt: 'en trop', ok: true })),
+      ...Array.from({ length: 50 }, () => ({ given: 'nimporte quoi' })),
     ],
   });
   assert.equal(absurde.status, 200);
+  assert.equal(absurde.body.score, 0);
 
+  // Et rien de démesuré n'atterrit dans le suivi de l'enseignant.
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   const d = (await prof.get(`/teacher/classes/${classId}/diagnostic/${CHAPITRE}`)).body;
-  const trop = d.erreurs.find((e) => e.prompt.length > 300 || e.given.length > 120);
-  assert.equal(trop, undefined, 'aucun texte ne dépasse les bornes');
+  assert.equal(d.erreurs.find((e) => e.prompt.length > 300 || e.given.length > 120), undefined);
 });
+
 
 test('remettre un élève à zéro efface aussi le détail de ses réponses', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');

@@ -3,7 +3,7 @@ const { test, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
-const { unlockUpTo, completeChapter } = require('./helpers');
+const { unlockUpTo, completeChapter, reussirSerie } = require('./helpers');
 
 let server;
 let base;
@@ -186,11 +186,12 @@ test('le parcours séquentiel ne se contourne pas par l’API', async () => {
   assert.equal(vu.progress.unlocked, false);
   const cours = vu.chapter.steps.find((s) => s.type === 'lesson');
   assert.equal(cours.blocks, undefined, 'le cours d’un chapitre verrouillé ne doit pas être envoyé');
+  // Les exercices restent entiers : ils sont jouables depuis les exercices libres.
   const exo = vu.chapter.steps.find((s) => s.type === 'exercise');
-  assert.equal(exo.generator, undefined, 'les paramètres d’exercice non plus');
+  assert.ok(exo.generator || exo.template, 'les exercices restent jouables hors parcours');
 
   // Et on ne peut pas y enregistrer de travail.
-  const triche = await eleve.post('/progress/attempt', { chapterId: second.id, stepId: exo.id, score: 1, total: 1, durationS: 5 });
+  const triche = await eleve.post('/progress/start', { chapterId: second.id, stepId: exo.id });
   assert.equal(triche.status, 403);
   assert.match(triche.body.error, /se débloquera/);
   assert.equal((await eleve.post('/progress/visit', { chapterId: second.id, stepId: exo.id })).status, 403);
@@ -213,16 +214,10 @@ test('les exercices libres restent accessibles hors parcours', async () => {
   const verrouille = chapitres[1];
   assert.equal((await eleve.get(`/chapters/${verrouille.id}`)).body.progress.unlocked, false);
 
-  const exo = verrouille.steps.find((s) => s.type === 'exercise');
-  const libre = await eleve.post('/progress/attempt', {
-    chapterId: verrouille.id,
-    stepId: exo.id,
-    score: exo.count,
-    total: exo.count,
-    durationS: 30,
-    mode: 'libre',
-  });
-  assert.equal(libre.status, 200, 'le mode libre échappe au verrou');
+  const complet = (await eleve.get(`/chapters/${verrouille.id}`)).body.chapter;
+  const exo = complet.steps.find((s) => s.type === 'exercise');
+  const libre = await reussirSerie(eleve, { chapterId: verrouille.id, step: exo, mode: 'libre' });
+  assert.equal(libre.score, exo.count, 'le mode libre échappe au verrou');
 });
 
 test('on ne modifie pas un chapitre qui n’existe pas', async () => {

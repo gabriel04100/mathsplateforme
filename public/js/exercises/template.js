@@ -8,6 +8,7 @@
 // exactement les mêmes règles.
 import { parseNumber, parsePoly, polyLatex, tex } from './generators.js';
 import { renderRichText } from '../content/richtext.js';
+import { random } from './random.js';
 
 export class TemplateError extends Error {}
 
@@ -288,16 +289,16 @@ const same = (a, b) => (typeof a === 'string' || typeof b === 'string' ? String(
 
 // ---------- Tirage des variables ----------
 
-const randInt = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const randInt = (a, b) => a + Math.floor(random() * (b - a + 1));
 
 function rollOne(v) {
-  if (v.type === 'liste') return v.values[Math.floor(Math.random() * v.values.length)];
+  if (v.type === 'liste') return v.values[Math.floor(random() * v.values.length)];
   const min = Number(v.min);
   const max = Number(v.max);
   if (v.type === 'decimal') {
     const d = Number.isInteger(v.decimals) ? v.decimals : 1;
     const f = 10 ** d;
-    return Math.round((min + Math.random() * (max - min)) * f) / f;
+    return Math.round((min + random() * (max - min)) * f) / f;
   }
   const step = Number.isInteger(v.step) && v.step > 0 ? v.step : 1;
   const n = Math.floor((max - min) / step);

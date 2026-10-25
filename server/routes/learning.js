@@ -9,7 +9,8 @@ module.exports = function learningRoutes({ content, progress, exercises, chapter
   // Exercices écrits par l'enseignant de la classe (hors parcours).
   r.get('/custom-exercises', (req, res) => res.json({ exercises: exercises.listForStudent(req.user) }));
   r.get('/custom-exercises/:id', (req, res) => res.json(exercises.getPlayable(req.user, req.params.id)));
-  r.post('/custom-exercises/:id/attempt', (req, res) => res.json(exercises.recordAttempt(req.user, req.params.id, req.body || {})));
+  r.post('/custom-exercises/:id/start', (req, res) => res.json(exercises.startSeries(req.user, req.params.id, req.body || {})));
+  r.post('/custom-exercises/attempt', (req, res) => res.json(exercises.recordSeries(req.user, req.body || {})));
 
   // Le catalogue dépend de l'utilisateur : il mêle le programme livré et les
   // chapitres écrits par son enseignant.
@@ -37,12 +38,13 @@ module.exports = function learningRoutes({ content, progress, exercises, chapter
     const i = siblings.findIndex((c) => c.id === ch.id);
     const etat = progress.chapterProgress(req.user, ch.id);
 
-    // Un chapitre encore verrouillé ne livre que sa table des matières :
-    // l'élève doit pouvoir lire « ce chapitre arrive après le précédent »
-    // sans que le cours et les exercices lui soient déjà servis.
+    // Un chapitre encore verrouillé ne livre pas son cours : l'élève voit la
+    // table des matières et lit « ce chapitre arrive après le précédent ».
+    // Les exercices, eux, restent entiers — ils sont accessibles à tout moment
+    // depuis les exercices libres, c'est précisément leur raison d'être.
     const verrouille = req.user.role !== 'teacher' && etat && !etat.unlocked;
     const contenu = verrouille
-      ? { ...ch, steps: ch.steps.map((s) => ({ id: s.id, type: s.type, title: s.title })) }
+      ? { ...ch, steps: ch.steps.map((s) => (s.type === 'lesson' ? { id: s.id, type: s.type, title: s.title } : s)) }
       : ch;
 
     res.json({
@@ -58,8 +60,15 @@ module.exports = function learningRoutes({ content, progress, exercises, chapter
     res.json(progress.recordVisit(req.user, req.body || {}));
   });
 
+  // Une série se déroule en deux temps : le serveur donne les questions (par
+  // une graine qu'il retient), puis corrige lui-même les réponses reçues. Le
+  // navigateur n'envoie jamais de score.
+  r.post('/progress/start', (req, res) => {
+    res.json(progress.startSeries(req.user, req.body || {}));
+  });
+
   r.post('/progress/attempt', (req, res) => {
-    res.json(progress.recordAttempt(req.user, req.body || {}));
+    res.json(progress.recordSeries(req.user, req.body || {}));
   });
 
   r.get('/dashboard', (req, res) => {

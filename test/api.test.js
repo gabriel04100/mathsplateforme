@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const path = require('node:path');
 const baseConfig = require('../server/config');
 const { createApp } = require('../server/app');
+const { jouerSerie, reussirSerie } = require('./helpers');
 
 let server;
 let base;
@@ -73,13 +74,24 @@ test('parcours complet enseignant + élève', async () => {
   dash = (await el.get('/dashboard')).body;
   assert.equal(dash.lastPosition.stepId, 'anim-aires', 'reprise : dernière étape ouverte');
 
-  assert.equal((await el.post('/progress/attempt', { chapterId: ch, stepId: 'ex-simple', score: 7, total: 6 })).status, 400);
-  assert.equal((await el.post('/progress/attempt', { chapterId: ch, stepId: 'cours', score: 1, total: 1 })).status, 400);
-  let r = (await el.post('/progress/attempt', { chapterId: ch, stepId: 'ex-simple', score: 3, total: 6 })).body;
+  // On ne peut pas ouvrir une série sur une étape qui n'est pas un exercice.
+  assert.equal((await el.post('/progress/start', { chapterId: ch, stepId: 'cours' })).status, 400);
+
+  const chapitre = (await el.get(`/chapters/${ch}`)).body.chapter;
+  const exSimple = chapitre.steps.find((x) => x.id === 'ex-simple');
+  const exDouble = chapitre.steps.find((x) => x.id === 'ex-double');
+
+  // Une série à moitié juste ne valide pas l'étape : le serveur compte.
+  let r = (await jouerSerie(el, { chapterId: ch, step: exSimple, repondre: (q, i, bonne) => (i < 3 ? bonne : 'nimporte quoi') })).resultat.body;
+  assert.equal(r.score, 3);
   assert.equal(r.passed, false);
-  r = (await el.post('/progress/attempt', { chapterId: ch, stepId: 'ex-simple', score: 6, total: 6 })).body;
+
+  // Tout juste : validée.
+  r = await reussirSerie(el, { chapterId: ch, step: exSimple });
+  assert.equal(r.score, exSimple.count);
   assert.equal(r.passed, true);
-  r = (await el.post('/progress/attempt', { chapterId: ch, stepId: 'ex-double', score: 4, total: 5, mode: 'libre' })).body;
+
+  r = await reussirSerie(el, { chapterId: ch, step: exDouble, mode: 'libre' });
   assert.equal(r.passed, true);
 
   lvl = (await el.get('/levels/4e')).body.progress;
