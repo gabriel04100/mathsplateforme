@@ -442,15 +442,15 @@ textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospa
 
 /* ---------- Parcours d'un niveau ---------- */
 .path { list-style: none; margin: 0; padding: 0; position: relative; }
-/* Le fil pointillé passe exactement par le centre des pastilles : la moitié de
-   la colonne qui les porte (26 px), plus la bordure de la carte (1 px), moins
-   la moitié de l'épaisseur du trait (1,5 px). Sans ce calage, le cercle et le
-   fil se manquent de peu — et le cercle a l'air de déborder de sa carte. */
-.path::before { content: ''; position: absolute; left: 25.5px; top: 20px; bottom: 20px; border-left: 3px dotted color-mix(in srgb, var(--lv) 45%, transparent); }
+/* Le fil passe exactement par le centre des pastilles : la moitié de la colonne
+   qui les porte (20 px), plus la bordure de la carte (1 px), moins la moitié de
+   l'épaisseur du trait (1,5 px). Les pastilles étant centrées dans leur colonne
+   (`justify-self`), ce calage ne dépend plus de leur diamètre. */
+.path::before { content: ''; position: absolute; left: 19.5px; top: 20px; bottom: 20px; border-left: 3px dotted color-mix(in srgb, var(--lv) 45%, transparent); }
 .ch { position: relative; margin-bottom: 12px; }
 .ch-row {
   display: grid;
-  grid-template-columns: 52px 1fr auto;
+  grid-template-columns: 40px 1fr auto;
   gap: 16px;
   align-items: center;
   padding: 14px 18px 14px 0;
@@ -463,23 +463,23 @@ a.ch-row:hover { border-color: var(--lv); }
 .node {
   position: relative;
   z-index: 1;
-  width: 52px;
-  height: 52px;
-  margin-left: 0;
+  width: 32px;
+  height: 32px;
+  justify-self: center;
   display: grid;
   place-items: center;
   border-radius: 50%;
   background: var(--paper-2);
-  border: 3px solid var(--lv);
+  border: 2px solid var(--lv);
   color: var(--lv);
-  font: 750 1.2rem/1 var(--font-title);
+  font: 750 0.95rem/1 var(--font-title);
 }
 /* Pas de décalage : la pastille tient entièrement dans la carte. Elle mordait
    d'un pixel sur la bordure, ce qui se voyait comme un défaut d'impression. */
 .ch.s-done .node { background: var(--lv); color: #fff; }
-.ch.s-in_progress .node { box-shadow: 0 0 0 5px color-mix(in srgb, var(--lv) 20%, transparent); }
+.ch.s-in_progress .node { box-shadow: 0 0 0 4px color-mix(in srgb, var(--lv) 18%, transparent); }
 .ch.s-locked .node, .ch.s-draft .node { border-style: dashed; border-color: var(--line); color: var(--muted); }
-.ch.s-draft .node { width: 20px; height: 20px; margin: 0 16px; border-width: 2px; }
+.ch.s-draft .node { width: 12px; height: 12px; border-width: 2px; }
 .ch.s-locked .ch-row, .ch.s-draft .ch-row { color: var(--muted); }
 .ch.s-draft .ch-row { padding: 4px 18px 4px 0; }
 .ch-body { display: grid; gap: 4px; min-width: 0; }
@@ -501,9 +501,9 @@ a.ch-row:hover { border-color: var(--lv); }
 .status.s-not_started { background: var(--blue-soft); color: var(--blue-ink); }
 .status.s-locked, .status.s-draft { color: var(--muted); }
 @media (max-width: 640px) {
-  .ch-row { grid-template-columns: 44px 1fr; gap: 12px; }
-  .node { width: 44px; height: 44px; }
-  .path::before { left: 21.5px; } /* 22 + 1 − 1,5, voir plus haut */
+  .ch-row { grid-template-columns: 34px 1fr; gap: 12px; }
+  .node { width: 28px; height: 28px; }
+  .path::before { left: 16.5px; } /* 17 + 1 − 1,5, voir plus haut */
   .status { grid-column: 2; justify-self: start; }
   .ch-summary { display: none; }
 }
