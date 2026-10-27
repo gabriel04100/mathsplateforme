@@ -220,8 +220,10 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-si
   .brand span { display: none; } /* on ne garde que le logo */
   .who { display: none; }
   .topnav { flex-direction: column-reverse; align-items: stretch; gap: 2px; }
-  .navrow { gap: 14px; font-size: 0.94rem; overflow-x: auto; scrollbar-width: none; }
-  .navrow::-webkit-scrollbar { display: none; }
+  /* Quatre entrées ne tiennent plus sur une ligne de téléphone. Elles passent
+     donc à la ligne : un défilement horizontal sans barre visible cacherait la
+     dernière (« Jeux ») sans que personne ne devine qu'il faut faire glisser. */
+  .navrow { gap: 4px 14px; font-size: 0.94rem; flex-wrap: wrap; }
   .dividers { justify-content: space-between; width: 100%; }
   .divider { flex: 1; min-width: 0; padding: 7px 4px; font-size: 0.98rem; }
 }
@@ -592,6 +594,11 @@ input[type='range'] { padding: 0; border: 0; accent-color: var(--blue); backgrou
 .students-layout { display: grid; gap: 28px; align-items: start; }
 .panel.wide { width: 100%; }
 .table-wrap { overflow-x: auto; background: var(--paper-2); border: 2px solid var(--rule); border-radius: 12px; }
+/* Un élément de grille prend par défaut la largeur de son contenu. La plupart
+   des grilles ci-dessous s'en prémunissent déjà avec `minmax(0, 1fr)` ; celles
+   qui ne le font pas laisseraient un tableau large pousser la page au lieu de
+   le laisser défiler dans son cadre. On uniformise. */
+.students-layout > *, .docs-layout > *, .teacher-home > *, .fiche-layout > *, .game-layout > *, .editor-layout > * { min-width: 0; }
 table { border-collapse: collapse; width: 100%; font-size: 0.95rem; }
 th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
 thead th { font-weight: 700; color: var(--muted); font-size: 0.85rem; background: var(--paper); }

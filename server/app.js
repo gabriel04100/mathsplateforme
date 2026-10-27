@@ -50,7 +50,12 @@ async function createApp(config, { log = console } = {}) {
   app.use(express.static(config.publicDir, { maxAge: config.isProd ? '1h' : 0 }));
 
   const api = express.Router();
-  api.use(express.json({ limit: '200kb' }));
+  // Le corps d'une requête est lu une seule fois. Le dépôt d'un document
+  // transporte un PDF encodé et a son propre analyseur, avec sa propre limite
+  // (voir routes/documents.js) : celui-ci doit donc le laisser passer, sinon il
+  // refuserait le PDF avant même que la route le voie.
+  const corpsJson = express.json({ limit: '200kb' });
+  api.use((req, res, next) => (req.method === 'POST' && req.path === '/documents' ? next() : corpsJson(req, res, next)));
   api.use(mw.requireJsonForWrites);
   api.use(mw.sessionMiddleware({ auth, config }));
   api.get('/health', (req, res) => res.json({ ok: true, content: content.stats() }));

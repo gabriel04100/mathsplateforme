@@ -47,7 +47,7 @@ test('le fichier exporté se suffit à lui-même', async () => {
   const { status, headers, html } = await telecharger(prof, '3e-calcul-litteral');
 
   assert.equal(status, 200);
-  assert.match(headers.get('content-disposition'), /attachment; filename="3e-calcul-litteral-developper\.html"/);
+  assert.match(headers.get('content-disposition'), /attachment; filename\*=UTF-8''3e-calcul-litteral-developper\.html/);
   assert.match(headers.get('content-type'), /text\/html/);
   assert.match(html, /<title>Calcul littéral : développer — 3e<\/title>/);
 

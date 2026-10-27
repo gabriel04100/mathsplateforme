@@ -83,7 +83,9 @@ module.exports = function teacherRoutes({ accounts, progress, exercises, chapter
   r.get('/chapters/:id/export', (req, res) => {
     const { filename, html } = exportHtml.construire(req.user, req.params.id);
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    // Même forme que pour les documents : le nom est encodé, aucun caractère
+    // ne peut s'échapper dans l'en-tête.
+    res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
     res.send(html);
   });
   r.get('/chapters/:id', (req, res) => res.json({ chapter: chapters.getForTeacher(tid(req), req.params.id) }));

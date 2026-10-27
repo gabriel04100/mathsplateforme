@@ -128,6 +128,21 @@ test('ce qui n’est pas un PDF est refusé, quel que soit le nom du fichier', a
   assert.equal((await prof.post('/documents', { title: 'x', level: '3e', filename: 'a.pdf', fileBase64: b64(PDF) })).status, 400);
 });
 
+test('un PDF plus lourd que la limite générale de l’API passe quand même', async () => {
+  // Le reste de l'API est plafonné à 200 ko ; un cours scanné pèse beaucoup
+  // plus. Le dépôt a donc son propre analyseur de corps — encore faut-il que
+  // l'analyseur général le laisse passer, ce qu'il ne faisait pas.
+  const prof = await login(client(), 'prof', 'motdepasse-prof');
+  const gros = Buffer.concat([PDF, Buffer.alloc(400 * 1024, 0x20)]);
+  const res = await prof.post('/documents', { title: 'Cours scanné', level: '3e', filename: 'cours.pdf', fileBase64: b64(gros) });
+  assert.equal(res.status, 201, 'un PDF de 400 ko doit être accepté');
+  assert.ok(res.body.document.sizeKo > 200);
+
+  // Et les autres routes restent bien plafonnées : la brèche ne s'ouvre que là.
+  const enorme = await prof.post('/teacher/classes', { name: 'x'.repeat(300000), level: '3e' });
+  assert.equal(enorme.status, 413);
+});
+
 test('un nom de fichier piégé ne sort pas du dossier des documents', async () => {
   const prof = await login(client(), 'prof', 'motdepasse-prof');
   const dep = await prof.post('/documents', {
