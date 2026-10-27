@@ -443,14 +443,15 @@ textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospa
 /* ---------- Parcours d'un niveau ---------- */
 .path { list-style: none; margin: 0; padding: 0; position: relative; }
 /* Le fil passe exactement par le centre des pastilles : la moitié de la colonne
-   qui les porte (20 px), plus la bordure de la carte (1 px), moins la moitié de
+   qui les porte (24 px), plus la bordure de la carte (1 px), moins la moitié de
    l'épaisseur du trait (1,5 px). Les pastilles étant centrées dans leur colonne
-   (`justify-self`), ce calage ne dépend plus de leur diamètre. */
-.path::before { content: ''; position: absolute; left: 19.5px; top: 20px; bottom: 20px; border-left: 3px dotted color-mix(in srgb, var(--lv) 45%, transparent); }
+   (`justify-self`), ce calage ne dépend ni de leur diamètre ni de leur halo —
+   c'est la largeur de la colonne qui les écarte du bord. */
+.path::before { content: ''; position: absolute; left: 23.5px; top: 20px; bottom: 20px; border-left: 3px dotted color-mix(in srgb, var(--lv) 45%, transparent); }
 .ch { position: relative; margin-bottom: 12px; }
 .ch-row {
   display: grid;
-  grid-template-columns: 40px 1fr auto;
+  grid-template-columns: 48px 1fr auto;
   gap: 16px;
   align-items: center;
   padding: 14px 18px 14px 0;
@@ -501,9 +502,9 @@ a.ch-row:hover { border-color: var(--lv); }
 .status.s-not_started { background: var(--blue-soft); color: var(--blue-ink); }
 .status.s-locked, .status.s-draft { color: var(--muted); }
 @media (max-width: 640px) {
-  .ch-row { grid-template-columns: 34px 1fr; gap: 12px; }
+  .ch-row { grid-template-columns: 40px 1fr; gap: 12px; }
   .node { width: 28px; height: 28px; }
-  .path::before { left: 16.5px; } /* 17 + 1 − 1,5, voir plus haut */
+  .path::before { left: 19.5px; } /* 20 + 1 − 1,5, voir plus haut */
   .status { grid-column: 2; justify-self: start; }
   .ch-summary { display: none; }
 }
