@@ -132,8 +132,10 @@ function pointLabel(c, txt, parent) {
   return t;
 }
 
-// L'angle noté avec son chapeau : « ABC » surmonté d'un accent.
-const angleHtml = (noms) => `<span class="ag-hat">${noms.join('')}</span>`;
+// L'angle noté avec son chapeau. C'est KaTeX qui le dessine (\widehat) : une
+// approximation en CSS donne un accent trop épais, qui mange les lettres.
+// Tout endroit qui affiche ceci doit donc passer par `ecrire()`.
+const angleHtml = (noms) => `$\\widehat{${noms.join('')}}$`;
 
 function typeCheck(a) {
   if (a < 90) return "On vérifie : l'angle est bien <b>aigu</b>, c'est normal pour une mesure inférieure à 90°.";
@@ -456,8 +458,12 @@ function mesurerAngle(el, params = {}, { math }) {
     player.goto(4);
     correcting = false;
     root.querySelector('[data-caption]').hidden = true;
-    root.querySelector('[data-exo-body]').innerHTML = `<p>Le rapporteur est déjà bien placé. Quelle est la mesure de l’angle ${angleHtml(S.names)} ?</p>
-      <label class="ctl inline">Mesure <input type="number" data-rep min="0" max="180" placeholder="?"> °</label>`;
+    ecrire(
+      root.querySelector('[data-exo-body]'),
+      `<p>Le rapporteur est déjà bien placé. Quelle est la mesure de l’angle ${angleHtml(S.names)} ?</p>
+      <label class="ctl inline">Mesure <input type="number" data-rep min="0" max="180" placeholder="?"> °</label>`,
+      math
+    );
     const fb = root.querySelector('[data-fb]');
     fb.hidden = true;
     root.querySelector('[data-act="corr"]').hidden = true;
@@ -473,7 +479,7 @@ function mesurerAngle(el, params = {}, { math }) {
     const input = root.querySelector('[data-rep]');
     const fb = root.querySelector('[data-fb]');
     const v = parseFloat(String(input.value).replace(',', '.'));
-    if (Number.isNaN(v)) return showFb(fb, 'ko', 'Écris un nombre entre 0 et 180.');
+    if (Number.isNaN(v)) return showFb(fb, 'ko', 'Écris un nombre entre 0 et 180.', math);
     const first = !ex.counted;
     if (first) {
       ex.counted = true;
@@ -483,16 +489,16 @@ function mesurerAngle(el, params = {}, { math }) {
     const indice = S.a < 90 ? 'L’angle est <b>aigu</b> : sa mesure doit être inférieure à 90°.' : S.a > 90 ? 'L’angle est <b>obtus</b> : sa mesure doit être supérieure à 90°.' : '';
     if (Math.abs(v - S.a) <= 1) {
       if (first) ex.ok++;
-      showFb(fb, 'ok', `🎉 Bravo ! ${angleHtml(S.names)} = <b>${S.a}°</b>.`);
+      showFb(fb, 'ok', `🎉 Bravo ! ${angleHtml(S.names)} = <b>${S.a}°</b>.`, math);
       root.querySelector('[data-act="corr"]').hidden = true;
     } else if (Math.abs(v - (180 - S.a)) <= 1 && Math.abs(S.a - 90) > 3) {
-      showFb(fb, 'ko', `Oups, tu as lu sur la <b>mauvaise graduation</b> ! Cherche le <b>0</b> posé sur le côté [${V}${A}) et lis sur celle-là. ${indice}`);
+      showFb(fb, 'ko', `Oups, tu as lu sur la <b>mauvaise graduation</b> ! Cherche le <b>0</b> posé sur le côté [${V}${A}) et lis sur celle-là. ${indice}`, math);
       root.querySelector('[data-act="corr"]').hidden = false;
     } else if (Math.abs(v - S.a) <= 5) {
-      showFb(fb, 'ko', 'Presque ! Regarde bien les petits traits : ils vont de 1 en 1.');
+      showFb(fb, 'ko', 'Presque ! Regarde bien les petits traits : ils vont de 1 en 1.', math);
       root.querySelector('[data-act="corr"]').hidden = false;
     } else {
-      showFb(fb, 'ko', `Ce n’est pas ça. Pars bien du 0 posé sur le côté [${V}${A}). ${indice}`);
+      showFb(fb, 'ko', `Ce n’est pas ça. Pars bien du 0 posé sur le côté [${V}${A}). ${indice}`, math);
       root.querySelector('[data-act="corr"]').hidden = false;
     }
     paintScore();
@@ -701,7 +707,7 @@ function construireAngle(el, params = {}, { math }) {
     const bis = (D.ref + D.oth) / 2;
     D.bubble = bubble(dynLayer, P(O, bis, a < 45 ? 160 : 105), `${a}°`);
 
-    root.querySelector('[data-consigne]').innerHTML = `<span class="ag-kicker">Consigne</span> Construire l’angle ${angleHtml(S.names)} de mesure ${a}°`;
+    ecrire(root.querySelector('[data-consigne]'), `<span class="ag-kicker">Consigne</span> Construire l’angle ${angleHtml(S.names)} de mesure ${a}°`, math);
     common?.invalidate();
   }
 
@@ -783,9 +789,12 @@ function construireAngle(el, params = {}, { math }) {
     stu.g.setAttribute('class', 'ag-stu');
     root.querySelector('[data-caption]').hidden = true;
     const [A, V, B] = S.names;
-    root.querySelector('[data-exo-body]').innerHTML =
+    ecrire(
+      root.querySelector('[data-exo-body]'),
       `<p>Le côté [${V}${A}) est tracé et le rapporteur est déjà placé. Place le point <b>${B}</b> pour que ${angleHtml(S.names)} = <b>${S.a}°</b>.</p>` +
-      '<p class="muted small">👆 Clique (ou touche l’écran) au bord du rapporteur. Tu peux déplacer ton point autant que tu veux avant de valider.</p>';
+        '<p class="muted small">👆 Clique (ou touche l’écran) au bord du rapporteur. Tu peux déplacer ton point autant que tu veux avant de valider.</p>',
+      math
+    );
     const fb = root.querySelector('[data-fb]');
     fb.hidden = true;
     root.querySelector('[data-act="corr"]').hidden = true;
@@ -830,7 +839,7 @@ function construireAngle(el, params = {}, { math }) {
 
   function check() {
     const fb = root.querySelector('[data-fb]');
-    if (ex.phase !== 'place' || ex.phi == null) return showFb(fb, 'ko', 'Place d’abord ton point au bord du rapporteur.');
+    if (ex.phase !== 'place' || ex.phi == null) return showFb(fb, 'ko', 'Place d’abord ton point au bord du rapporteur.', math);
     const first = !ex.counted;
     if (first) {
       ex.counted = true;
@@ -841,7 +850,7 @@ function construireAngle(el, params = {}, { math }) {
     const indice = S.a < 90 ? 'Ici l’angle doit être <b>aigu</b> (moins de 90°).' : S.a > 90 ? 'Ici l’angle doit être <b>obtus</b> (plus de 90°).' : '';
     if (Math.abs(v - S.a) <= 1) {
       if (first) ex.ok++;
-      showFb(fb, 'ok', `🎉 Bravo ! Le point ${B} est bien en face de la graduation ${S.a}. On retire le rapporteur et on trace [${V}${B}).`);
+      showFb(fb, 'ok', `🎉 Bravo ! Le point ${B} est bien en face de la graduation ${S.a}. On retire le rapporteur et on trace [${V}${B}).`, math);
       ex.phase = 'done';
       svg.classList.remove('placing');
       ghost.g.style.display = 'none';
@@ -849,13 +858,13 @@ function construireAngle(el, params = {}, { math }) {
       root.querySelector('[data-act="corr"]').hidden = true;
       player.runTo(6, STEPS.length); // on finit la construction devant lui
     } else if (Math.abs(v - (180 - S.a)) <= 1 && Math.abs(S.a - 90) > 3) {
-      showFb(fb, 'ko', `Oups, tu as compté sur la <b>mauvaise graduation</b> : ton angle mesurerait ${180 - S.a}° ! Pars du <b>0</b> posé sur le côté [${V}${A}). ${indice}`);
+      showFb(fb, 'ko', `Oups, tu as compté sur la <b>mauvaise graduation</b> : ton angle mesurerait ${180 - S.a}° ! Pars du <b>0</b> posé sur le côté [${V}${A}). ${indice}`, math);
       root.querySelector('[data-act="corr"]').hidden = false;
     } else if (Math.abs(v - S.a) <= 5) {
-      showFb(fb, 'ko', `Presque ! Ton point est à ${Math.abs(v - S.a)}° de la bonne graduation. Regarde bien les petits traits : ils vont de 1 en 1.`);
+      showFb(fb, 'ko', `Presque ! Ton point est à ${Math.abs(v - S.a)}° de la bonne graduation. Regarde bien les petits traits : ils vont de 1 en 1.`, math);
       root.querySelector('[data-act="corr"]').hidden = false;
     } else {
-      showFb(fb, 'ko', `Ce n’est pas ça. Pars du 0 posé sur le côté [${V}${A}) et compte jusqu’à ${S.a}. ${indice}`);
+      showFb(fb, 'ko', `Ce n’est pas ça. Pars du 0 posé sur le côté [${V}${A}) et compte jusqu’à ${S.a}. ${indice}`, math);
       root.querySelector('[data-act="corr"]').hidden = false;
     }
     paintScore();
@@ -958,9 +967,18 @@ function sweep(pr, sweepTxt, root, { actif, a, t, inner, r, sr, fade, repli }) {
   readout.textContent = `${Math.round(s)}°`;
 }
 
-function showFb(el, kind, html) {
-  el.className = `ag-fb ${kind}`;
+// Écrit du texte dans un élément et rend les formules qu'il contient. Toute
+// écriture qui peut contenir du LaTeX passe par là.
+function ecrire(el, html, math) {
+  if (!el) return el;
   el.innerHTML = html;
+  math?.(el);
+  return el;
+}
+
+function showFb(el, kind, html, math) {
+  el.className = `ag-fb ${kind}`;
+  ecrire(el, html, math);
   el.hidden = false;
 }
 

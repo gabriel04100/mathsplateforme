@@ -69,6 +69,12 @@ export async function teacherChapterEditorView({ el, params: [id], query }) {
         <span class="tag ${model.status === 'published' ? 'ok' : ''}" data-status-tag>${model.status === 'published' ? 'Publié' : 'Brouillon'}</span>
         <button type="button" class="btn" data-save>Enregistrer</button>
         <button type="button" class="btn ghost" data-publish>${model.status === 'published' ? 'Repasser en brouillon' : 'Publier'}</button>
+        ${
+          isNew
+            ? ''
+            : `<a class="btn ghost" href="/api/teacher/chapters/${encodeURIComponent(model.id)}/export" download
+                title="Un seul fichier HTML, qui fonctionne sans connexion ni compte">⬇ HTML hors ligne</a>`
+        }
       </div>
     </header>
     ${

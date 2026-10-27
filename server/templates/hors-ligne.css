@@ -1,0 +1,50 @@
+/* Habillage propre au chapitre exporté. La feuille de style de la plateforme
+   est reprise telle quelle juste avant : on ne redéfinit ici que ce qui change
+   — la page n'a ni barre de navigation, ni session, ni serveur. */
+
+/* Les polices de la plateforme ne sont pas embarquées (elles pèseraient plus
+   lourd que tout le reste) : on prend celles du système, dans le même esprit. */
+:root {
+  --font-title: 'Avenir Next', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --font-body: 'Segoe UI', system-ui, -apple-system, Helvetica, Arial, sans-serif;
+}
+
+body { margin: 0; }
+.hl-entete {
+  display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline;
+  padding: 22px 24px 16px; max-width: 1180px; margin: 0 auto;
+  border-bottom: 2px solid var(--rule);
+}
+.hl-entete h1 { font: 750 1.9rem/1.15 var(--font-title); margin: 0; letter-spacing: -0.01em; }
+.hl-entete .tag { align-self: center; }
+.hl-sous { color: var(--muted); margin: 0; flex-basis: 100%; font-size: 0.95rem; }
+.hl-corps { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 24px; max-width: 1180px; margin: 0 auto; padding: 22px 24px 60px; align-items: start; }
+.hl-etapes { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; position: sticky; top: 16px; }
+/* La colonne est étroite : le titre d'étape doit pouvoir se replier, donc ne
+   pas imposer sa largeur minimale à la grille. */
+.hl-etapes .step-link { width: 100%; min-width: 0; text-align: left; background: transparent; border: 2px solid transparent; cursor: pointer; font: inherit; }
+.hl-etapes .step-link > span { min-width: 0; }
+.hl-etapes .step-name { white-space: normal; overflow: visible; }
+.hl-etapes .step-link:hover { border-color: var(--rule); }
+.hl-etapes .step-link.current { border-color: var(--blue); background: var(--blue-soft); }
+#vue { min-width: 0; background: var(--paper-2); border: 2px solid var(--rule); border-radius: var(--radius); padding: 22px 24px; }
+#vue:focus { outline: none; }
+.step-nav { margin-top: 26px; padding-top: 18px; border-top: 1px dashed var(--rule); display: flex; justify-content: flex-end; }
+.hl-pied { max-width: 1180px; margin: 0 auto; padding: 0 24px 40px; color: var(--muted); font-size: 0.88rem; }
+#chargement { padding: 60px 24px; text-align: center; color: var(--muted); }
+
+/* MathML : le navigateur dessine les formules lui-même, il faut juste leur
+   laisser la place et la bonne taille. */
+math { font-size: 1.08em; }
+.prompt math { font-size: 1.12em; }
+
+@media (max-width: 820px) {
+  .hl-corps { grid-template-columns: 1fr; }
+  .hl-etapes { position: static; }
+}
+
+@media print {
+  .hl-etapes, .step-nav, .q-actions, .w-actions { display: none !important; }
+  .hl-corps { display: block; padding: 0; }
+  #vue { border: 0; padding: 0; }
+}

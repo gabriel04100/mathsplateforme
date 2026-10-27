@@ -54,6 +54,8 @@ export async function teacherParcoursView({ el, query }) {
         <button type="button" class="rowdel" data-down ${i === active.length - 1 ? 'disabled' : ''} title="Descendre">↓</button>
         <a class="linkbtn" href="/prof/chapitres/${key}" data-link>Modifier</a>
         <a class="linkbtn" href="/chapitre/${key}" data-link>Voir</a>
+        <a class="linkbtn" href="/api/teacher/chapters/${key}/export" download
+          title="Un seul fichier HTML : le cours, les animations et les exercices, sans connexion ni compte">Télécharger (HTML)</a>
         ${isMine ? '<button type="button" class="linkbtn" data-archive>Archiver</button>' : ''}
         ${!isMine && c.modified ? '<button type="button" class="linkbtn" data-reset>Version d’origine</button>' : ''}
       </span>

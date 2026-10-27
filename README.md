@@ -188,6 +188,33 @@ Le texte saisi n'est **jamais** inséré tel quel : il est échappé, puis seule
 
 ---
 
+## Emporter un chapitre : le fichier HTML hors ligne
+
+Depuis **Mes chapitres**, chaque ligne propose *Télécharger (HTML)* (le bouton est aussi dans
+l'éditeur). On obtient **un seul fichier**, qu'on ouvre d'un double-clic : le cours, les animations et
+les exercices sont dedans, entiers.
+
+- **Aucune connexion, aucun compte, aucun serveur.** Le fichier ne va chercher ni script, ni police, ni
+  image : tout est à l'intérieur (environ 500 Ko).
+- **Les vraies animations et les vrais exercices.** Ce n'est pas une copie allégée : le code des
+  générateurs et des widgets est embarqué tel quel. Les questions sont donc tirées au hasard à chaque
+  ouverture, et corrigées exactement comme sur le site.
+- **Les formules sont du MathML**, dessiné par le navigateur : rien à installer, et une impression nette.
+
+À quoi ça sert : donner un chapitre à un collègue, travailler sur un poste d'établissement où rien
+n'est installé, projeter une animation sans dépendre du réseau, ou garder une trace lisible du cours.
+
+Deux limites, écrites en bas du fichier :
+
+- **aucune progression n'est enregistrée** — il n'y a pas de serveur pour la garder, le fichier ne
+  renvoie rien nulle part ;
+- **les vidéos YouTube ne sont pas incluses** : elles demandent une connexion, le bloc affiche le lien.
+
+Réservé à l'enseignant : c'est lui qui décide de ce qui sort de la plateforme. Un élève qui appelle
+l'adresse d'export reçoit un refus.
+
+---
+
 ## Écrire des exercices depuis l'interface (sans code)
 
 `Mes classes` → **Mes exercices** → *Nouvel exercice*. Un exercice est un **modèle** : on décrit les nombres qui changent, et la plateforme génère des questions différentes à chaque série, comme les exercices intégrés.
@@ -254,7 +281,7 @@ Le serveur **recalcule les bornes** de chaque score reçu (niveau et durée conn
          ├── animations/ widgets · angles ◄───────────┼───┤      │   auth · accounts · pseudonyms
          │               decimaux                     │   │      │   progress · series · content
          ├── games/      tables · audio               │   │      │   chapters · exercises · games
-         ├── math/       expr                         │   │      │   documents
+         ├── math/       expr                         │   │      │   documents · exportHtml
          └── api.js      un seul client HTTP          │   │      ├── repositories/  SEUL endroit avec du SQL
                                                       │   │      │
                                         shared-modules.js ┘      └── db/          connexion + migrations

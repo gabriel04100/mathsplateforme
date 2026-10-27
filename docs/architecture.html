@@ -69,9 +69,9 @@ footer{color:var(--muted);font-size:.9rem;border-top:2px solid var(--rule);paddi
 <main>
 
 <h1>Maths Collège — comment l'application fonctionne</h1>
-<p class="lede">Schéma de fonctionnement de la plateforme, à jour. Cinq vues : l'architecture générale,
+<p class="lede">Schéma de fonctionnement de la plateforme, à jour. Six vues : l'architecture générale,
 le cycle d'un exercice, les deux typologies de publication, les données conservées (et celles qui ne
-le sont pas), et où se trouve chaque chose dans le dépôt.</p>
+le sont pas), l'export d'un chapitre hors ligne, et où se trouve chaque chose dans le dépôt.</p>
 
 <!-- ===================================================================== -->
 <h2>1 · Vue d'ensemble</h2>
@@ -358,7 +358,45 @@ de classe ou un diagnostic.
 </div>
 
 <!-- ===================================================================== -->
-<h2>5 · Où sont les choses</h2>
+<h2>5 · Emporter un chapitre</h2>
+<p>Depuis <em>Mes chapitres</em>, l'enseignant télécharge un chapitre sous forme d'<strong>un seul
+fichier HTML</strong>, qui s'ouvre d'un double-clic sans serveur, sans compte et sans réseau.</p>
+<p>Le parti pris : on embarque le <em>vrai</em> code — les mêmes générateurs et les mêmes widgets que
+le site — plutôt qu'une version simplifiée qui divergerait au premier changement. Les modules sont
+posés dans la page, chacun dans sa propre portée, et ne partagent qu'un petit registre. Un fichier
+ouvert en <code>file://</code> ne peut pas charger de module externe : tout doit tenir dedans.</p>
+
+<div class="card">
+<svg viewBox="0 0 980 210" role="img" aria-label="Ce que contient un chapitre exporté">
+  <rect class="b blue" x="20" y="44" width="210" height="130" rx="12"/>
+  <text class="t ti" x="36" y="70">Le serveur assemble</text>
+  <text class="t sm" x="36" y="94">le chapitre (cours rendu,</text>
+  <text class="t sm" x="36" y="112">étapes, paramètres)</text>
+  <text class="t sm" x="36" y="136">+ le code du site</text>
+  <text class="t sm" x="36" y="154">+ la feuille de style + KaTeX</text>
+
+  <path class="ar blue" d="M 236 109 L 306 109"/>
+
+  <rect class="b hl" x="314" y="44" width="240" height="130" rx="12"/>
+  <text class="t ti" x="330" y="70">Un fichier, ~500 Ko</text>
+  <text class="t sm" x="330" y="94">6e-angles.html</text>
+  <text class="t sm" x="330" y="118">aucune ressource externe :</text>
+  <text class="t sm" x="330" y="136">ni script, ni police, ni image</text>
+  <text class="t sm" x="330" y="158">formules en MathML</text>
+
+  <path class="ar" d="M 560 109 L 630 109"/>
+
+  <rect class="b ok" x="638" y="44" width="322" height="130" rx="12"/>
+  <text class="t ti" x="654" y="70">Double-clic, n'importe où</text>
+  <text class="t sm" x="654" y="94">Le cours, les animations et les exercices</text>
+  <text class="t sm" x="654" y="112">fonctionnent : questions tirées au hasard,</text>
+  <text class="t sm" x="654" y="130">corrigées dans la page.</text>
+  <text class="t sm" x="654" y="156">Pas de progression enregistrée : pas de serveur.</text>
+</svg>
+</div>
+
+<!-- ===================================================================== -->
+<h2>6 · Où sont les choses</h2>
 <pre style="background:var(--paper-2);border:2px solid var(--rule);border-radius:12px;padding:16px;overflow-x:auto;font-size:.88rem;line-height:1.55"><code>mathsplateforme/
 ├── content/            le programme livré, en JSON versionné
 │   ├── levels.json
@@ -377,6 +415,7 @@ de classe ou un diagnostic.
 │   ├── middleware/           session, rôles, en-têtes de sécurité
 │   ├── routes/               fines : elles appellent un service
 │   ├── services/             toute la logique
+│   ├── templates/            le chapitre exporté hors ligne
 │   ├── repositories/         le seul SQL du projet
 │   └── db/migrations/        001 → 013
 ├── scripts/            migrate · create-teacher · check-content

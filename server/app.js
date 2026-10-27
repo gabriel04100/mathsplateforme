@@ -13,6 +13,7 @@ const { createChaptersService } = require('./services/chapters');
 const { createGamesService } = require('./services/games');
 const { createDocumentsService } = require('./services/documents');
 const { createSeriesService } = require('./services/series');
+const { createExportService } = require('./services/export-html');
 const { loadSharedModules } = require('./shared-modules');
 const mw = require('./middleware');
 
@@ -33,7 +34,8 @@ async function createApp(config, { log = console } = {}) {
   const accounts = createAccountsService({ repos, auth, content });
   const games = createGamesService({ repos });
   const documents = createDocumentsService({ repos, config, content });
-  const services = { repos, content, auth, progress, accounts, exercises, chapters, games, documents, series, config };
+  const exportHtml = createExportService({ chapters });
+  const services = { repos, content, auth, progress, accounts, exercises, chapters, games, documents, series, exportHtml, config };
 
   const app = express();
   app.disable('x-powered-by');

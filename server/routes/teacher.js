@@ -2,7 +2,7 @@
 const express = require('express');
 const { requireRole } = require('../middleware');
 
-module.exports = function teacherRoutes({ accounts, progress, exercises, chapters }) {
+module.exports = function teacherRoutes({ accounts, progress, exercises, chapters, exportHtml }) {
   const r = express.Router();
   r.use(requireRole('teacher'));
   const tid = (req) => req.user.id;
@@ -77,6 +77,15 @@ module.exports = function teacherRoutes({ accounts, progress, exercises, chapter
     res.json({ chapters: chapters.listForTeacher(tid(req), { archived: wantsArchived(req), kind: req.query.type }) })
   );
   r.get('/chapters/palette', (req, res) => res.json(chapters.palette(tid(req))));
+
+  // Un chapitre en un seul fichier HTML, à garder ou à donner. Réservé à
+  // l'enseignant : c'est lui qui décide ce qui sort de la plateforme.
+  r.get('/chapters/:id/export', (req, res) => {
+    const { filename, html } = exportHtml.construire(req.user, req.params.id);
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(html);
+  });
   r.get('/chapters/:id', (req, res) => res.json({ chapter: chapters.getForTeacher(tid(req), req.params.id) }));
   r.post('/chapters', (req, res) => res.status(201).json({ chapter: chapters.create(tid(req), req.body || {}) }));
   r.patch('/chapters/:id', (req, res) => res.json({ chapter: chapters.update(tid(req), req.params.id, req.body || {}) }));

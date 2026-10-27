@@ -995,9 +995,6 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .ag-check { color: var(--ok); }
 .ag-blue { color: var(--blue-ink); font-weight: 700; }
 .ag-red { color: var(--ko); font-weight: 700; }
-/* La notation de l'angle, avec son chapeau. */
-.ag-hat { position: relative; display: inline-block; padding-top: 0.14em; white-space: nowrap; font-weight: 700; }
-.ag-hat::before { content: ''; position: absolute; left: 6%; right: 6%; top: -0.08em; height: 0.34em; border-left: 0.45em solid transparent; border-right: 0.45em solid transparent; border-bottom: 0.3em solid currentColor; opacity: 0.75; }
 
 .ag-body { fill: color-mix(in srgb, var(--blue) 14%, transparent); stroke: color-mix(in srgb, var(--blue) 55%, var(--ink)); stroke-width: 1.5; }
 .ag-tick { stroke: var(--ink); stroke-width: 0.7; fill: none; }
