@@ -3,3 +3,6 @@ data/
 .env
 *.sqlite*
 .DS_Store
+
+# Chapitres exportés en HTML : fichiers produits à la demande, jamais versionnés.
+hors-ligne/
