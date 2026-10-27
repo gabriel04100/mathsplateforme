@@ -1118,10 +1118,13 @@ table.sheet.vars select { border: 0; border-radius: 0; background: transparent; 
 .ag-dot.done { background: var(--blue-soft); color: var(--ink); }
 .ag-dot.cur { border-color: var(--lv-4e); color: var(--lv-4e); background: color-mix(in srgb, var(--lv-4e) 14%, var(--paper-2)); }
 .ag-method { margin: 0; padding: 0; list-style: none; counter-reset: agm; display: grid; gap: 2px; }
-.ag-method li { counter-increment: agm; display: grid; grid-template-columns: 24px 1fr; gap: 9px; padding: 6px 8px; border-radius: var(--r-sm); font-size: 0.95rem; transition: background 0.3s; }
+.ag-method li { counter-increment: agm; display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 9px; padding: 6px 8px; border-radius: var(--r-sm); font-size: 0.95rem; transition: background 0.3s; }
 .ag-method li::before { content: counter(agm); width: 24px; height: 24px; border-radius: 50%; background: var(--blue-soft); color: var(--ink); font-weight: 800; font-size: 0.82rem; display: grid; place-items: center; }
 .ag-method li.on { background: color-mix(in srgb, var(--lv-4e) 12%, transparent); }
 .ag-method li.on::before { background: var(--lv-4e); color: #fff; }
+/* Le texte de l'étape est enveloppé dans un span : sans lui, chaque mot en gras
+   deviendrait une cellule de grille et les mots se chevaucheraient. */
+.ag-method li > span { min-width: 0; }
 .ag-fb { margin: 0; padding: 9px 12px; border-radius: var(--r); }
 .ag-fb.ok { background: var(--ok-soft); color: var(--ok); }
 .ag-fb.ko { background: var(--ko-soft); color: var(--ko); }

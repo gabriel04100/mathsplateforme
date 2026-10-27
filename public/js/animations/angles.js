@@ -296,7 +296,7 @@ function shell({ scene, methode, exoTitre }) {
       </section>
       <section class="ag-card">
         <h3>La méthode</h3>
-        <ol class="ag-method" data-method>${methode.map((m) => `<li>${m}</li>`).join('')}</ol>
+        <ol class="ag-method" data-method>${methode.map((m) => `<li><span>${m}</span></li>`).join('')}</ol>
       </section>
     </div>
     </div>
