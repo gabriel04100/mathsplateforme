@@ -4,7 +4,7 @@
 // nominative : le lien pseudonyme ↔ élève est tenu par l'enseignant en dehors
 // de la plateforme (voir server/services/pseudonyms.js et la migration 011).
 const crypto = require('node:crypto');
-const { genererPseudonyme, nettoyerPseudonyme } = require('./pseudonyms');
+const { genererPseudonyme, nettoyerPseudonyme, trierParPseudonyme } = require('./pseudonyms');
 
 class AccountError extends Error {
   constructor(message, status = 400) {
@@ -148,7 +148,7 @@ function createAccountsService({ repos, auth, content }) {
 
     listStudents(teacherId, classId) {
       ownedClass(teacherId, classId);
-      return repos.users.listByClass(Number(classId)).map(publicStudent);
+      return trierParPseudonyme(repos.users.listByClass(Number(classId))).map(publicStudent);
     },
 
     // Un pseudonyme libre, à proposer dans l'interface.

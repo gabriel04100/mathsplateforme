@@ -204,9 +204,11 @@ test('un compte élève n’a qu’un pseudonyme, jamais un nom', async () => {
   const colonnes = db.prepare('SELECT * FROM pragma_table_info(?)').all('users').map((c) => c.name);
   assert.ok(!colonnes.includes('first_name') && !colonnes.includes('last_name'), 'les colonnes de noms ont disparu');
 
-  // Liste triée par pseudonyme.
+  // Liste triée par pseudonyme, selon les règles du français : « Écureuil » se
+  // range entre « Castor » et « Loutre », pas après « Zèbre » comme le ferait
+  // un tri octet par octet.
   const pseudos = students.map((s) => s.pseudonym);
-  assert.deepEqual(pseudos, [...pseudos].sort((a, b) => a.localeCompare(b, 'fr')));
+  assert.deepEqual(pseudos, [...pseudos].sort((a, b) => a.localeCompare(b, 'fr', { sensitivity: 'base' })));
 
   // Un pseudonyme avec un chiffre, ou déjà pris, est refusé.
   assert.equal((await prof.post(`/teacher/classes/${classId}/students`, { students: [{ pseudonym: 'Martin 42' }] })).status, 400);
@@ -237,4 +239,19 @@ test('une classe archivée quitte la liste principale sans perdre ses élèves',
 
   await prof.patch(`/teacher/classes/${classId}`, { archived: false });
   assert.ok((await prof.get('/teacher/classes')).body.classes.some((c) => c.id === classId));
+});
+
+test('les pseudonymes accentués se rangent à leur place', async () => {
+  // Un tri par octets mettrait « Écureuil » après « Zèbre », et cet élève-là
+  // serait toujours en bas de la liste d'appel.
+  const prof = await login(client(), 'prof', 'motdepasse-prof');
+  const classId = (await prof.post('/teacher/classes', { name: '6e accents', level: '6e' })).body.class.id;
+  await prof.post(`/teacher/classes/${classId}/students`, {
+    students: [{ pseudonym: 'Zèbre tenace' }, { pseudonym: 'Écureuil vif' }, { pseudonym: 'Castor prudent' }],
+  });
+  const students = (await prof.get(`/teacher/classes/${classId}/students`)).body.students;
+  assert.deepEqual(
+    students.map((s) => s.pseudonym),
+    ['Castor prudent', 'Écureuil vif', 'Zèbre tenace']
+  );
 });

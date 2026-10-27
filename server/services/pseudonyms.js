@@ -79,4 +79,23 @@ function nettoyerPseudonyme(brut) {
   return PSEUDO_RE.test(nom) ? nom : null;
 }
 
-module.exports = { ANIMAUX, QUALITES, COMBINAISONS, PSEUDO_RE, pseudonymeNumero, genererPseudonyme, genererPseudonymes, nettoyerPseudonyme };
+// L'ordre alphabétique d'une liste de classe.
+//
+// SQLite ne sait trier qu'octet par octet : « Écureuil » y tombe après « Zèbre »,
+// et un élève au pseudonyme accentué se retrouverait toujours en bas. Le tri
+// se fait donc ici, où l'on peut demander les règles du français.
+const comparerPseudonymes = (a, b) => String(a).localeCompare(String(b), 'fr', { sensitivity: 'base' });
+const trierParPseudonyme = (gens, nom = (g) => g.display_name) => [...gens].sort((x, y) => comparerPseudonymes(nom(x), nom(y)));
+
+module.exports = {
+  ANIMAUX,
+  QUALITES,
+  COMBINAISONS,
+  PSEUDO_RE,
+  pseudonymeNumero,
+  genererPseudonyme,
+  genererPseudonymes,
+  nettoyerPseudonyme,
+  comparerPseudonymes,
+  trierParPseudonyme,
+};

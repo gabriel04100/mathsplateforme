@@ -9,6 +9,7 @@ class ProgressError extends Error {
 }
 
 const { cleanQuestionDetail } = require('./question-detail');
+const { trierParPseudonyme } = require('./pseudonyms');
 
 // `chapters` fusionne le programme des fichiers et les chapitres écrits par
 // l'enseignant : la progression ne fait donc aucune différence entre les deux.
@@ -350,7 +351,7 @@ function createProgressService({ repos, content, chapters, exercises = null, ser
       const viewer = asStudentOf(classId);
       const ch = chapterOf(viewer, chapterId);
       if (!ch) throw new ProgressError('Chapitre introuvable', 404);
-      const students = repos.users.listByClass(classId);
+      const students = trierParPseudonyme(repos.users.listByClass(classId));
       const ids = students.map((s) => s.id);
       const byStep = new Map(repos.questionResults.statsByStep(ids, chapterId).map((r) => [r.step_id, r]));
       const names = new Map(students.map((s) => [s.id, s.display_name]));
@@ -394,7 +395,7 @@ function createProgressService({ repos, content, chapters, exercises = null, ser
     },
 
     classGrid(classId, levelId) {
-      const students = repos.users.listByClass(classId);
+      const students = trierParPseudonyme(repos.users.listByClass(classId));
       const ids = students.map((s) => s.id);
       const rowsByUser = new Map(ids.map((id) => [id, []]));
       for (const r of repos.progress.listForUsers(ids)) rowsByUser.get(r.user_id).push(r);
