@@ -390,15 +390,30 @@ textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospa
 @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; gap: 8px; } }
 .resume {
   position: relative;
-  background: var(--paper-2);
-  border: 1px solid var(--line-2);
-  border-left: 10px solid var(--lv);
-  border-radius: var(--r);
-  padding: 24px 28px 26px;
-  box-shadow: var(--shadow);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--lv) 13%, transparent), transparent 62%),
+    var(--paper-2);
+  border: 1px solid color-mix(in srgb, var(--lv) 28%, var(--line));
+  border-radius: var(--r-lg);
+  padding: 28px 30px 30px;
+  box-shadow: var(--sh-2);
+  overflow: hidden;
+}
+/* Un chiffre d'archive en filigrane : la page respire sans rien ajouter à lire. */
+.resume::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  bottom: -70px;
+  width: 190px;
+  height: 190px;
+  border-radius: 50%;
+  border: 18px solid color-mix(in srgb, var(--lv) 9%, transparent);
+  pointer-events: none;
 }
 .resume-kicker { color: var(--muted); margin-bottom: 6px; }
-.resume h2 { font-size: clamp(1.6rem, 3vw, 2.1rem); margin-bottom: 10px; }
+.resume h2 { font-size: clamp(1.7rem, 3.2vw, 2.25rem); margin-bottom: 12px; position: relative; }
+.resume > * { position: relative; }
 .hl {
   background-image: linear-gradient(transparent 52%, var(--hl) 52%, var(--hl) 90%, transparent 90%);
   background-repeat: no-repeat;
@@ -409,7 +424,7 @@ textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospa
   -webkit-box-decoration-break: clone;
 }
 @keyframes highlight { to { background-size: 100% 100%; } }
-.resume-step { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 18px; }
+.resume-step { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 20px; padding: 6px 12px 6px 8px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--lv) 12%, var(--paper-2)); color: var(--lv); }
 .next-up { margin-top: 18px; padding: 14px 18px; border: 2px dashed var(--line); border-radius: var(--r); }
 .next-up p { margin-bottom: 6px; color: var(--muted); }
 .next-link { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
@@ -417,12 +432,16 @@ textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospa
 
 .level-progress { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
 .level-progress li { display: grid; grid-template-columns: 64px 1fr; align-items: center; gap: 14px; }
-.lp-tab { display: block; text-align: center; padding: 8px 0; border-radius: var(--r-sm); background: color-mix(in srgb, var(--lv) 14%, var(--paper-2)); color: var(--lv); border: 2px solid var(--lv); font: 750 1.05rem/1 var(--font-title); text-decoration: none; }
+.lp-tab { display: block; text-align: center; padding: 9px 0; border-radius: var(--r-sm); background: color-mix(in srgb, var(--lv) 12%, var(--paper-2)); color: var(--lv); border: 1px solid color-mix(in srgb, var(--lv) 35%, transparent); font: 750 1.05rem/1 var(--font-title); text-decoration: none; transition: background 0.15s ease; }
+.lp-tab:hover { background: color-mix(in srgb, var(--lv) 22%, var(--paper-2)); }
 .level-progress li.home .lp-tab { background: var(--lv); color: #fff; }
 .lp-body { display: grid; gap: 4px; }
 .lp-txt { font-size: 0.92rem; color: var(--muted); }
-.bar { display: block; height: 10px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--lv) 14%, var(--paper-2)); overflow: hidden; border: 1px solid color-mix(in srgb, var(--lv) 30%, transparent); }
-.bar > span { display: block; height: 100%; background: var(--lv); border-radius: var(--r-pill); }
+.bar { display: block; height: 12px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--lv) 13%, var(--paper-2)); overflow: hidden; border: 1px solid color-mix(in srgb, var(--lv) 22%, transparent); }
+/* La jauge se remplit au chargement : on voit son avancement arriver, au lieu
+   de le trouver déjà là. */
+.bar > span { display: block; height: 100%; background: linear-gradient(90deg, color-mix(in srgb, var(--lv) 78%, white), var(--lv)); border-radius: var(--r-pill); transform-origin: left; animation: jauge 0.8s 0.1s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+@keyframes jauge { from { transform: scaleX(0); } }
 
 .recent { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; }
 .recent li { display: grid; grid-template-columns: 58px 1fr; gap: 12px; align-items: start; line-height: 1.35; }
@@ -551,8 +570,9 @@ a.ch-row:hover { border-color: var(--lv); }
 .ex-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .ex-count { color: var(--muted); font-weight: 700; }
 .pips { list-style: none; display: flex; gap: 6px; padding: 0; margin: 6px 0 18px; }
-.pips li { flex: 1; max-width: 48px; height: 8px; border-radius: var(--r-pill); background: var(--line); }
-.pips li.cur { background: var(--blue); }
+.pips li { flex: 1; max-width: 48px; height: 9px; border-radius: var(--r-pill); background: var(--line); transition: background 0.2s ease; }
+.pips li.cur { background: var(--blue); animation: pip 1.6s ease-in-out infinite; }
+@keyframes pip { 50% { opacity: 0.45; } }
 .pips li.ok { background: var(--ok); }
 .pips li.ko { background: var(--ko); }
 .question { max-width: 640px; }
@@ -584,9 +604,24 @@ a.ch-row:hover { border-color: var(--lv); }
 .fb-sol { line-height: 1.9; }
 .result { text-align: center; }
 .result .pips { justify-content: center; }
-.big-score { font: 800 3.4rem/1 var(--font-title); margin: 24px 0 12px; color: var(--muted); }
+.big-score { font: 800 clamp(3.4rem, 9vw, 4.6rem)/1 var(--font-title); margin: 20px 0 10px; color: var(--muted); letter-spacing: -0.03em; }
 .big-score span { color: var(--ink); }
 .result.passed .big-score span { color: var(--ok); }
+/* Série réussie : une auréole verte derrière le score, et il arrive en grossissant. */
+.result.passed .big-score { position: relative; animation: score 0.5s cubic-bezier(0.22, 1.6, 0.4, 1) backwards; }
+.result.passed .big-score::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 190px;
+  height: 190px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--ok-soft), transparent 72%);
+  z-index: -1;
+}
+@keyframes score { from { transform: scale(0.72); opacity: 0; } }
 .result-msg { max-width: 52ch; margin: 0 auto 6px; }
 .result .q-actions { justify-content: center; }
 
