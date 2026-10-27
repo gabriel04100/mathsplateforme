@@ -365,12 +365,15 @@ C'est aussi ce que fait la vérification automatique à chaque envoi sur GitHub 
 
 ### Le plus simple : Render (recommandé)
 
+[![Déployer sur Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/gabriel04100/mathsplateforme)
+
 Tout est déjà décrit dans [`render.yaml`](render.yaml) : Render le lit, crée le service, le disque et
 les variables, et **redéploie tout seul à chaque `git push`**. Pas de terminal, pas de serveur à
 administrer, pas de certificat à renouveler — HTTPS est fourni.
 
-1. Aller sur [render.com](https://render.com) et **se connecter avec GitHub**.
-2. **New → Blueprint**, choisir le dépôt `mathsplateforme`, puis *Connect*.
+1. Cliquer sur le bouton ci-dessus (ou aller sur [render.com](https://render.com) → **New → Blueprint**)
+   et **se connecter avec GitHub**.
+2. Autoriser Render à lire le dépôt `mathsplateforme`, puis *Connect*.
 3. Render affiche ce qu'il va créer et demande les deux seules valeurs secrètes :
    - `TEACHER_USERNAME` — votre identifiant enseignant, par exemple `gpizzo` ;
    - `TEACHER_PASSWORD` — un mot de passe long, **que vous notez tout de suite**.
