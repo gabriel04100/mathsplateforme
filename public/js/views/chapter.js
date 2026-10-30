@@ -2,7 +2,7 @@
 // En mode « libre », seul l'exercice est affiché, hors parcours.
 import { api } from '../api.js';
 import { state, markLevelTab } from '../app.js';
-import { esc, renderMath, STEP_KIND, stepIcon, toast } from '../ui.js';
+import { esc, renderMath, STEP_KIND, stepIcon, toast, progressBar } from '../ui.js';
 import { WIDGETS } from '../animations/widgets.js';
 import { generateSet, expectedText } from '../exercises/generators.js';
 import { generateFromTemplate } from '../exercises/template.js';
@@ -29,7 +29,10 @@ function blockHtml(b) {
     </section>`;
   }
   const label = BLOCK_LABEL[b.type];
-  const head = label || b.title ? `<h3>${label ? `<span class="block-kind">${label}</span>` : ''}${b.title ? esc(b.title) : ''}</h3>` : '';
+  // L'étiquette dit déjà « Exemple » : un titre qui la répète n'apporte rien.
+  const titre = String(b.title || '').trim();
+  const titreUtile = titre && titre.toLowerCase() !== (label || '').toLowerCase() ? esc(titre) : '';
+  const head = label || titreUtile ? `<h3>${label ? `<span class="block-kind">${label}</span>` : ''}${titreUtile}</h3>` : '';
   return `<section class="block b-${b.type}">${head}<div class="block-body">${b.html}</div></section>`;
 }
 
@@ -83,7 +86,18 @@ export async function chapterView({ el, params: [chapterId, stepParam], mode = '
       </section>`
     : `<section class="page chapter lv-${ch.level}">
         <nav class="crumbs"><a href="/niveau/${ch.level}" data-link>${esc(ch.level)}</a> <span aria-hidden="true">/</span> Chapitre ${ch.order}</nav>
-        <header class="page-head"><h1>${esc(ch.title)}</h1></header>
+        <header class="page-head chapter-head">
+          <span class="chapter-num" aria-hidden="true">${ch.order}</span>
+          <div class="chapter-id">
+            <h1>${esc(ch.title)}</h1>
+            ${ch.summary ? `<p class="chapter-summary">${esc(ch.summary)}</p>` : ''}
+          </div>
+          <p class="chapter-prog">
+            <span class="cp-count">${prog.steps.filter((x) => x.done).length} / ${ch.steps.length}</span>
+            <span class="muted small">étapes terminées</span>
+            ${progressBar(prog.percent || 0, ch.level)}
+          </p>
+        </header>
         <div class="chapter-grid">
           <ol class="steps" aria-label="Étapes du chapitre"></ol>
           <div class="step-pane" id="pane" tabindex="-1"></div>
